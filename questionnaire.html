@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pre-clinic Questionnaire</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Patient-facing, phone-first: one column of question cards, big tap targets, a fixed bottom bar with progress and the next action. */
+:root{
+  --bg:#F2F5F6; --surface:#FFFFFF; --sunk:#E9EEF0; --ink:#15232B; --muted:#52636B; --line:#CFD9DD;
+  --accent:#0D5868; --accent-ink:#FFFFFF; --accent-soft:#DDEDF1;
+  --alert:#B3261E; --alert-soft:#FBE8E6; --good:#1E6A39; --good-soft:#E1F1E6;
+  --f-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1519; --surface:#162127; --sunk:#111A1F; --ink:#E3EBEE; --muted:#9AACB4; --line:#2A3940;
+  --accent:#62B6C8; --accent-ink:#0B1A1F; --accent-soft:#15343B; --alert:#F28A80; --alert-soft:#3B1D1A; --good:#7DCB96; --good-soft:#163022; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1519; --surface:#162127; --sunk:#111A1F; --ink:#E3EBEE; --muted:#9AACB4; --line:#2A3940;
+  --accent:#62B6C8; --accent-ink:#0B1A1F; --accent-soft:#15343B; --alert:#F28A80; --alert-soft:#3B1D1A; --good:#7DCB96; --good-soft:#163022; color-scheme:dark }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}
+.wrap{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+header .wrap{padding-block:16px}
+header h1{margin:0;font-size:23px;line-height:1.25;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.ref{font-family:var(--f-data);font-weight:600;background:var(--sunk);padding:1px 7px;border-radius:6px;color:var(--ink)}
+.urgent{margin:16px 0;background:var(--alert-soft);border:1.5px solid var(--alert);border-radius:12px;padding:12px 14px;color:var(--ink)}
+.urgent b{color:var(--alert)}
+.note{margin:12px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;color:var(--muted)}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 16px 10px;margin:16px 0}
+.step h2{font-size:15px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:12px 0 0}
+.q{padding:14px 0;border-top:1px solid var(--line)}
+.step h2+.q{border-top:0}
+.q label.qt,.q .qt{display:block;font-weight:700;font-size:17px;margin-bottom:8px}
+.q .help{display:block;font-weight:400;font-size:14.5px;color:var(--muted);margin-top:2px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts button{font:inherit;font-size:16px;min-height:46px;padding:9px 15px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;cursor:pointer;text-align:left}
+.opts button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.opts.col{flex-direction:column}
+.opts.col button{width:100%}
+input[type=number],input[type=date],input[type=time],input[type=email],textarea{font:inherit;font-size:17px;width:100%;min-height:46px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+input[type=number]{max-width:200px;font-family:var(--f-data)}
+.dt{display:flex;gap:10px;flex-wrap:wrap}.dt input{max-width:220px}
+textarea{min-height:110px;resize:vertical}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+.bar .wrap{display:flex;align-items:center;gap:12px;padding-block:12px}
+.prog{flex:1;min-width:0}
+.prog small{color:var(--muted);font-size:13.5px}
+.track{height:7px;background:var(--sunk);border-radius:4px;overflow:hidden;margin-top:4px}
+.track i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.btn{font:inherit;font-size:16.5px;font-weight:700;min-height:48px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.sec{background:var(--surface);color:var(--accent)}
+.done{background:var(--surface);border:1.5px solid var(--good);border-radius:14px;padding:16px;margin:16px 0}
+.done h2{margin:0 0 6px;font-size:21px}
+.sum{margin:12px 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.sum li{padding:8px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px;font-size:15.5px}
+.sum li span{color:var(--muted);font-size:14px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.code{font-family:var(--f-data);font-size:12px;word-break:break-all;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:140px;overflow:auto;margin-top:10px;user-select:all}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:10px;font-size:15px;z-index:20;max-width:calc(100vw - 32px)}
+.err{color:var(--alert);font-weight:700}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1 id="h1">Pre-clinic questionnaire</h1>
+  <p id="sub">Rheumatology fast-track clinic · Reference <span class="ref" id="refTxt">—</span></p>
+</div></header>
+
+<main class="wrap" id="main">
+  <div class="urgent" id="urgent"><b>Do not wait to fill this in if you notice any change in your eyesight</b>, such as blurring, double vision, or loss of sight even for a few seconds. Call 999 or go to A&amp;E now and tell them you are being seen for possible giant cell arteritis.</div>
+  <div class="note">This takes about 5 minutes. Please <b>do not write your name, date of birth, address or NHS number</b> anywhere: the clinic matches your answers to you using the reference above. Your answers stay on your device until you choose to send them.</div>
+  <div id="form"></div>
+  <div id="result" hidden></div>
+</main>
+
+<div class="bar"><div class="wrap">
+  <div class="prog"><small id="progTxt">0 of 0 answered</small><div class="track"><i id="progBar"></i></div></div>
+  <button class="btn" type="button" id="finish">Review &amp; send</button>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* Questionnaire definitions. Field ids and option values match the clinic app so answers import directly. */
+const P = new URLSearchParams(location.search);
+const TYPE = P.get('t')==='pmr' ? 'pmr' : 'gca';
+const REF = (P.get('ref')||'').replace(/[^A-Za-z0-9]/g,'').slice(0,12) || 'NOREF';
+const REPLY = (P.get('reply')||'').trim();
+const replyOK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(REPLY);
+
+const yn = [['Yes',true],['No',false],['Not sure',null]];
+const COMORB = [['Diabetes','Diabetes'],['Thin bones (osteoporosis) or a broken bone from a minor fall','Osteoporosis / fracture'],['Stomach ulcer','Peptic ulcer'],['An infection now','Active infection'],['Glaucoma or cataract','Glaucoma / cataract'],['Depression, anxiety or another mental health condition','Mental health'],['High blood pressure','Hypertension'],['I smoke','Current smoker']];
+const ABOUT = [
+  {h:'About you'},
+  {id:'age',q:'How old are you?',type:'num',unit:'years'},
+  {id:'sex',q:'What sex were you registered at birth?',type:'one',opts:[['Female','Female'],['Male','Male'],['Prefer not to say',null]]},
+  {id:'weight',q:'Roughly how much do you weigh?',help:'In kilograms. Leave blank if you are not sure.',type:'num',unit:'kg'}];
+const HEALTH = [
+  {h:'Your health and medicines'},
+  {id:'comorb',q:'Do you have any of these?',help:'Tick all that apply.',type:'many',opts:COMORB},
+  {id:'anticoag',q:'Do you take a blood thinner?',help:'For example aspirin, clopidogrel, warfarin, apixaban or rivaroxaban.',type:'one',opts:[['No','None'],['Aspirin or clopidogrel','Antiplatelet'],['Warfarin, apixaban, rivaroxaban, edoxaban or dabigatran','Anticoagulant'],['Not sure',null]],col:true}];
+const GCA = [...ABOUT,
+  {h:'Your symptoms'},
+  {id:'onset',q:'When did these symptoms start?',type:'one',opts:[['Less than 6 weeks ago','<6 weeks'],['6 to 11 weeks ago','6–11 weeks'],['3 to 6 months ago','12–24 weeks'],['More than 6 months ago','>24 weeks']],col:true},
+  {id:'headache',q:'Have you had a new headache?',help:'A headache that is new for you, or different from your usual headaches.',type:'one',opts:[['No','None'],['Yes, at the side of my head (temples)','New temporal'],['Yes, somewhere else','New other site']],col:true},
+  {id:'scalp',q:'Is your scalp sore to touch, for example when brushing your hair?',type:'one',opts:yn},
+  {id:'jaw',q:'Do you get pain in your jaw or tongue when chewing, which eases when you stop?',type:'one',opts:yn},
+  {id:'pmr',q:'Are your shoulders or neck stiff and painful in the mornings?',type:'one',opts:yn},
+  {id:'_const',q:'Have you had any of these?',help:'Tick all that apply.',type:'many',opts:[['Fevers or feeling hot and shivery','fever'],['Night sweats','sweats'],['Losing weight without trying','weight']],into:'constitutional'},
+  {id:'limb_claud',q:'Do your arms ache or tire quickly when you use them, for example brushing your hair?',type:'one',opts:yn},
+  {h:'Your eyesight'},
+  {id:'visual',q:'Have you had any problems with your eyesight?',help:'If this is happening now, stop and call 999 or go to A&E.',type:'one',opts:[['No','None'],['Blurring, or loss of sight that came back','Transient loss / blurring'],['Double vision','Diplopia'],['Loss of sight that has not come back','Permanent loss']],col:true,alert:['Transient loss / blurring','Diplopia','Permanent loss']},
+  {id:'stroke',q:'Have you had sudden weakness, numbness, or trouble speaking?',type:'one',opts:yn,alert:[true]},
+  ...HEALTH,
+  {h:'Steroid tablets'},
+  {id:'pred_dose',q:'Have you been started on prednisolone (steroid) tablets for this?',type:'one',opts:[['No, not yet',null],['Yes, 40 mg a day','40 mg'],['Yes, 60 mg a day','60 mg'],['Yes, a different dose','Other']],col:true},
+  {id:'steroid_dt',q:'When did you take the first dose?',help:'Please give the date and the time as best you can.',type:'dt',show:a=>a.pred_dose&&a.pred_dose!==null},
+  {h:'Anything else'},
+  {id:'extra_notes',q:'Is there anything else you would like the clinic to know?',help:'Please do not include your name, date of birth or NHS number.',type:'text'}];
+const PMR = [...ABOUT,
+  {h:'Pain and stiffness'},
+  {id:'p_shoulder',q:'Do you have pain or aching around your shoulders or upper arms?',type:'one',opts:[['Yes, on both sides','Bilateral'],['Yes, on one side','Unilateral'],['No','None']],col:true},
+  {id:'p_hip',q:'Do you have pain or aching around your hips or thighs?',type:'one',opts:[['Yes, on both sides','Bilateral'],['Yes, on one side','Unilateral'],['No','None']],col:true},
+  {id:'p_neck',q:'Is your neck painful or stiff?',type:'one',opts:yn},
+  {id:'p_stiff_min',q:'In the mornings, about how many minutes does it take for the stiffness to ease?',help:'Enter 0 if you are not stiff in the mornings.',type:'num',unit:'minutes'},
+  {id:'p_duration',q:'How many weeks have you had these symptoms?',type:'num',unit:'weeks'},
+  {id:'p_onset',q:'How quickly did the symptoms come on?',type:'one',opts:[['Over a few days','Abrupt (days)'],['Over a few weeks','Subacute (weeks)'],['Slowly, over months','Gradual (months)']],col:true},
+  {id:'_joints',q:'Are any other joints painful, such as your hands, wrists, knees or feet?',type:'one',opts:[['No','None'],['Yes, painful','pain'],['Yes, painful and swollen','swollen']],col:true,into:'p_other_joints'},
+  {id:'p_weakness',q:'Do your muscles feel weak, rather than just painful or stiff?',help:'For example, struggling to get up from a chair even when the pain is not bad.',type:'one',opts:yn},
+  {h:'Other symptoms'},
+  {id:'headache',q:'Have you had a new headache?',type:'one',opts:[['No','None'],['Yes, at the side of my head (temples)','New temporal'],['Yes, somewhere else','New other site']],col:true,alert:['New temporal','New other site']},
+  {id:'scalp',q:'Is your scalp sore to touch, for example when brushing your hair?',type:'one',opts:yn,alert:[true]},
+  {id:'jaw',q:'Do you get pain in your jaw or tongue when chewing?',type:'one',opts:yn,alert:[true]},
+  {id:'visual',q:'Have you had any problems with your eyesight?',type:'one',opts:[['No','None'],['Blurring, or loss of sight that came back','Transient loss / blurring'],['Double vision','Diplopia'],['Loss of sight that has not come back','Permanent loss']],col:true,alert:['Transient loss / blurring','Diplopia','Permanent loss']},
+  {id:'p_wtloss',q:'Have you lost weight without trying?',type:'one',opts:yn},
+  {id:'p_night',q:'Does the pain wake you at night or continue when you are resting?',type:'one',opts:yn},
+  {id:'p_fever',q:'Have you had fevers or night sweats?',type:'one',opts:yn},
+  {id:'p_cancer',q:'Have you ever had cancer?',type:'one',opts:yn},
+  {id:'_statin',q:'Have you started a statin (cholesterol tablet) in the last few months?',type:'one',opts:yn,intoMimic:'Statin started recently'},
+  {id:'_infect',q:'Have you had an infection in the last few weeks?',type:'one',opts:yn,intoMimic:'Recent infection'},
+  ...HEALTH,
+  {h:'If you have already started steroid tablets'},
+  {id:'p_dose',q:'Have you been started on steroids for this?',type:'one',opts:[['No, not yet',null],['Prednisolone 15 mg a day','Prednisolone 15 mg'],['Prednisolone 20 mg a day','Prednisolone 20 mg'],['Prednisolone 25 mg a day','Prednisolone 25 mg'],['A steroid injection','IM methylprednisolone 120 mg']],col:true},
+  {id:'p_steroid_dt',q:'When did you start?',type:'dt',show:a=>a.p_dose&&a.p_dose!==null},
+  {id:'p_improve',q:'Overall, how much better are you since starting?',help:'0% means no better, 100% means completely better.',type:'num',unit:'%',show:a=>a.p_dose&&a.p_dose!==null},
+  {id:'p_stiff_now',q:'How many minutes of morning stiffness do you have now?',type:'num',unit:'minutes',show:a=>a.p_dose&&a.p_dose!==null},
+  {id:'p_vas_pain',q:'How bad is your pain now, from 0 (none) to 10 (worst imaginable)?',type:'num',unit:'out of 10',show:a=>a.p_dose&&a.p_dose!==null},
+  {h:'Anything else'},
+  {id:'p_extra_notes',q:'Is there anything else you would like the clinic to know?',help:'Please do not include your name, date of birth or NHS number.',type:'text'}];
+const QS = TYPE==='pmr'?PMR:GCA;
+const A = {}; const NOTSURE = new Set();
+
+/* ---------- rendering ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#h1').textContent = TYPE==='pmr' ? 'Shoulder and hip pain: pre-clinic questionnaire' : 'Headache and possible GCA: pre-clinic questionnaire';
+document.title = TYPE==='pmr' ? 'PMR Pre-clinic Questionnaire' : 'GCA Pre-clinic Questionnaire';
+$('#refTxt').textContent = REF;
+if(TYPE==='pmr') $('#urgent').innerHTML = '<b>Get help the same day if you develop a new headache, pain in your jaw when chewing, or any change in your eyesight.</b> For changes in eyesight call 999 or go to A&amp;E now. These can be signs of giant cell arteritis, which is linked to polymyalgia rheumatica.';
+
+function render(){
+  let html='', open=false;
+  QS.forEach((q,i)=>{
+    if(q.h){ if(open) html+='</section>'; html+=`<section class="step"><h2>${esc(q.h)}</h2>`; open=true; return; }
+    if(q.show && !q.show(A)) return;
+    html+=`<div class="q" id="q_${q.id}">`;
+    const qid='in_'+q.id;
+    if(['num','text','dt'].includes(q.type)) html+=`<label class="qt" for="${qid}">${esc(q.q)}${q.help?`<span class="help">${esc(q.help)}</span>`:''}</label>`;
+    else html+=`<span class="qt" id="lb_${q.id}">${esc(q.q)}${q.help?`<span class="help">${esc(q.help)}</span>`:''}</span>`;
+    if(q.type==='one'||q.type==='many'){
+      html+=`<div class="opts ${q.col?'col':''}" role="group" aria-labelledby="lb_${q.id}">`+q.opts.map(([l,v],k)=>{ const on = q.type==='one' ? (k===sel(q)) : (A[q.id]||[]).includes(v);
+        return `<button type="button" data-q="${q.id}" data-k="${k}" class="${on?'on':''}" aria-pressed="${on}">${esc(l)}</button>`; }).join('')+'</div>';
+    } else if(q.type==='num'){
+      html+=`<div style="display:flex;align-items:center;gap:10px"><input type="number" inputmode="decimal" id="${qid}" data-qi="${q.id}" value="${esc(A[q.id]??'')}" min="0"><span style="color:var(--muted)">${esc(q.unit||'')}</span></div>`;
+    } else if(q.type==='dt'){
+      const v=A[q.id]||''; html+=`<div class="dt"><input type="date" id="${qid}" data-qd="${q.id}" value="${esc(v.slice(0,10))}" aria-label="Date"><input type="time" data-qt="${q.id}" value="${esc(v.slice(11,16))}" aria-label="Time"></div>`;
+    } else if(q.type==='text'){
+      html+=`<textarea id="${qid}" data-qi="${q.id}">${esc(A[q.id]??'')}</textarea>`;
+    }
+    html+='</div>';
+  });
+  if(open) html+='</section>';
+  $('#form').innerHTML=html; progress();
+}
+const SEL = {};
+function sel(q){ return SEL[q.id]; }
+function progress(){ const qs=QS.filter(q=>!q.h&&(!q.show||q.show(A))&&q.type!=='text'); const n=qs.filter(q=>SEL[q.id]!==undefined||(A[q.id]!==undefined&&A[q.id]!==''&&!(Array.isArray(A[q.id])&&!A[q.id].length))||NOTSURE.has(q.id)).length;
+  $('#progTxt').textContent=`${n} of ${qs.length} answered`; $('#progBar').style.width=(qs.length?n/qs.length*100:0)+'%'; }
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-q]'); if(!b) return;
+  const q=QS.find(x=>x.id===b.dataset.q), k=+b.dataset.k, v=q.opts[k][1];
+  if(q.type==='one'){ if(SEL[q.id]===k){ delete SEL[q.id]; delete A[q.id]; NOTSURE.delete(q.id); } else { SEL[q.id]=k; if(v===null){ delete A[q.id]; NOTSURE.add(q.id); } else { A[q.id]=v; NOTSURE.delete(q.id); } }
+    if(q.alert && q.alert.includes(v)) toast(TYPE==='pmr'&&q.id!=='visual' ? 'Please contact your GP or NHS 111 today about this symptom.' : 'If this is happening now, call 999 or go to A&E now.');
+  } else { const cur=new Set(A[q.id]||[]); cur.has(v)?cur.delete(v):cur.add(v); A[q.id]=[...cur]; }
+  const y=window.scrollY; render(); window.scrollTo(0,y);
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.qi){ A[t.dataset.qi]=t.value; progress(); }
+  if(t.dataset.qd||t.dataset.qt){ const id=t.dataset.qd||t.dataset.qt; const d=document.querySelector(`[data-qd="${id}"]`).value, tm=document.querySelector(`[data-qt="${id}"]`).value; if(d) A[id]=d+'T'+(tm||'09:00'); else delete A[id]; progress(); }
+});
+function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(window._t); window._t=setTimeout(()=>t.hidden=true,6000); }
+
+/* ---------- build payload ---------- */
+function payload(){
+  const v={};
+  QS.forEach(q=>{ if(q.h||(q.show&&!q.show(A))) return; const a=A[q.id]; if(a===undefined||a===''||(Array.isArray(a)&&!a.length)) return;
+    if(q.into==='constitutional'){ v.constitutional = a.length>=2?'Combination':'Single'; return; }
+    if(q.into==='p_other_joints'){ v.p_other_joints = a==='None'?'None':'Other joint pain'; if(a==='swollen') v._swollen=true; return; }
+    if(q.intoMimic){ if(a===true) (v.p_mimics=v.p_mimics||[]).push(q.intoMimic); return; }
+    if(q.type==='num'){ const n=parseFloat(a); if(!isNaN(n)) v[q.id]=String(n); return; }
+    if(q.type==='text'){ v[q.id]=String(a).slice(0,1500); return; }
+    v[q.id]=a; });
+  if(QS.some(q=>q.id==='_const') && A._const && !A._const.length) v.constitutional='None';
+  if(v._swollen){ const k=TYPE==='pmr'?'p_extra_notes':'extra_notes'; v[k]=('Patient reports swollen joints.'+(v[k]?' '+v[k]:'')); delete v._swollen; }
+  return {t:TYPE, ref:REF, d:new Date().toISOString().slice(0,16), v};
+}
+function b64u(bytes){ let s=''; bytes.forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+async function encode(obj){
+  const json=JSON.stringify(obj);
+  try{ const cs=new CompressionStream('deflate-raw'); const buf=await new Response(new Blob([json]).stream().pipeThrough(cs)).arrayBuffer(); return 'GCAPMR1z:'+b64u(new Uint8Array(buf)); }
+  catch(_){ return 'GCAPMR1:'+b64u(new TextEncoder().encode(json)); }
+}
+function summaryLines(){
+  const out=[]; QS.forEach(q=>{ if(q.h||(q.show&&!q.show(A))) return; const a=A[q.id];
+    let txt=null;
+    if(q.type==='one'){ if(SEL[q.id]!==undefined) txt=q.opts[SEL[q.id]][0]; }
+    else if(q.type==='many'){ if(a&&a.length) txt=q.opts.filter(o=>a.includes(o[1])).map(o=>o[0]).join('; '); else if(a) txt='None of these'; }
+    else if(q.type==='dt'){ if(a) txt=a.replace('T',' at '); }
+    else if(a!==undefined&&a!=='') txt=q.unit?`${a} ${q.unit}`:String(a);
+    if(txt!=null) out.push([q.q,txt]); });
+  return out;
+}
+
+/* ---------- finish ---------- */
+$('#finish').addEventListener('click', async ()=>{
+  if(!$('#result').hidden){ $('#result').hidden=true; $('#form').hidden=false; $('#finish').textContent='Review & send'; window.scrollTo(0,0); return; }
+  const code=await encode(payload()); const lines=summaryLines();
+  const subject=`Pre-clinic questionnaire – reference ${REF}`;
+  const bodyTxt=`Reference: ${REF}\nQuestionnaire: ${TYPE.toUpperCase()}\n\n`+lines.map(([q,a])=>`${q}\n  ${a}`).join('\n')+`\n\nCode for the clinic (please leave as it is):\n${code}\n`;
+  const head=`Reference: ${REF}\n\nCode for the clinic (please leave as it is):\n${code}\n\n`;
+  let mailto = replyOK ? `mailto:${encodeURIComponent(REPLY)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(head+'My answers:\n'+lines.map(([q,a])=>`- ${q} ${a}`).join('\n'))}` : '';
+  if(mailto.length>1900) mailto=`mailto:${encodeURIComponent(REPLY)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(head+'(All my answers are contained in the code above.)')}`;
+  $('#result').innerHTML = `<div class="done">
+    <h2>Check your answers</h2>
+    <p>If anything is wrong, press <b>Edit answers</b>. When you are happy, send them to the clinic.</p>
+    <ul class="sum">${lines.map(([q,a])=>`<li>${esc(a)}<span>${esc(q)}</span></li>`).join('')||'<li>No answers yet</li>'}</ul>
+    <div class="actions">
+      ${replyOK?`<a class="btn" href="${esc(mailto)}" id="sendMail">Send to the clinic by email</a>`:''}
+      <button class="btn ${replyOK?'sec':''}" type="button" id="copyAll">Copy my answers</button>
+    </div>
+    <p style="font-size:15px;color:var(--muted);margin-top:12px">${replyOK?`This opens your email app with your answers addressed to <b>${esc(REPLY)}</b>. If it does not open, press <b>Copy my answers</b> and paste them into an email to that address.`:`Press <b>Copy my answers</b>, then paste them into a reply to the email that sent you this link.`} Your reference is <span class="ref">${esc(REF)}</span>.</p>
+    <details><summary style="cursor:pointer;color:var(--muted);font-size:15px">Show the code for the clinic</summary><div class="code">${esc(code)}</div></details>
+  </div>`;
+  $('#result').hidden=false; $('#form').hidden=true; $('#finish').textContent='Edit answers'; window.scrollTo(0,0);
+  $('#copyAll').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(`${subject}\n\n${bodyTxt}`); toast('Copied. Paste it into an email to the clinic.'); }catch(_){ toast('Copy was blocked. Open "Show the code for the clinic" and copy it by hand.'); } });
+});
+render();
+</script>
+</body>
+</html>

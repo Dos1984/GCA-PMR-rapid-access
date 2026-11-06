@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>GCA & PMR Fast-Track</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: clinical work surface. Sticky header, section rail of chips, form column + live "scores & clock" panel on the right (stacks on phones). */
+:root{
+  --bg:#F2F5F6; --surface:#FFFFFF; --sunk:#E9EEF0; --ink:#15232B; --muted:#56676F; --line:#D3DCE0;
+  --accent:#0D5868; --accent-ink:#FFFFFF; --accent-soft:#DDEDF1;
+  --alert:#B3261E; --alert-soft:#FBE8E6; --warn:#8F5600; --warn-soft:#FCF0DA; --good:#1E6A39; --good-soft:#E1F1E6;
+  --ai:#5A3EA6; --ai-soft:#EDE8FA;
+  --f-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1519; --surface:#162127; --sunk:#111A1F; --ink:#E3EBEE; --muted:#93A5AD; --line:#2A3940;
+  --accent:#62B6C8; --accent-ink:#0B1A1F; --accent-soft:#15343B;
+  --alert:#F28A80; --alert-soft:#3B1D1A; --warn:#E6B566; --warn-soft:#382A12; --good:#7DCB96; --good-soft:#163022;
+  --ai:#B9A6F2; --ai-soft:#271F40; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1519; --surface:#162127; --sunk:#111A1F; --ink:#E3EBEE; --muted:#93A5AD; --line:#2A3940;
+  --accent:#62B6C8; --accent-ink:#0B1A1F; --accent-soft:#15343B;
+  --alert:#F28A80; --alert-soft:#3B1D1A; --warn:#E6B566; --warn-soft:#382A12; --good:#7DCB96; --good-soft:#163022;
+  --ai:#B9A6F2; --ai-soft:#271F40; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px;max-width:1100px;margin:0 auto}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand b{font-size:17px;letter-spacing:.01em}
+.brand small{color:var(--muted);font-size:12.5px}
+.pt{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ptname{font-weight:700;font-size:14px;padding:4px 10px;border-radius:999px;background:var(--sunk)}
+.btn{text-decoration:none;font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn.ai{background:var(--ai);color:var(--surface);border-color:var(--ai);font-weight:700}
+.btn:disabled{opacity:.55;cursor:default}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+nav.rail{display:flex;gap:6px;overflow-x:auto;padding-block:8px;max-width:1100px;margin:0 auto;scrollbar-width:thin}
+.chip.ghost{border-style:dashed;color:var(--muted)}
+.alertstrip{max-width:1100px;margin:0 auto 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--alert-soft);color:var(--alert);border:1px solid var(--alert);border-radius:8px;padding:6px 10px;font-size:13.5px;font-weight:700}
+.alertstrip button{font:inherit;font-size:12.5px;font-weight:700;border:1px solid var(--alert);background:var(--surface);color:var(--alert);border-radius:6px;padding:3px 8px;cursor:pointer}
+.chip{flex:none;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px;cursor:pointer;display:flex;gap:6px;align-items:center;text-decoration:none}
+.chip .code{font-family:var(--f-data);font-weight:600;color:var(--accent)}
+.chip .cnt{font-family:var(--f-data);font-size:11.5px;color:var(--muted)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.layout{max-width:1100px;margin:0 auto;padding-block:16px 120px}
+main{min-width:0;display:flex;flex-direction:column;gap:18px}
+#panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-items:start}
+#panel .redflags,#panel .next{grid-column:1/-1}
+@media (max-width:640px){header.top{position:static}.brand small{display:none}.top .btn{padding:5px 9px;font-size:13px}.pt{margin-left:0}.big{font-size:24px}.pcard{padding:10px 12px}}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;scroll-margin-top:150px}
+.sectoggle{font:inherit;color:inherit;background:none;border:0;padding:4px 0;margin:0;width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;text-align:left}
+.sectoggle:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.sechead{margin:0;width:100%;font-size:inherit;display:flex;align-items:center;gap:8px}
+.sechead .sectoggle{flex:1;min-width:0}
+h3.subhead{display:flex;align-items:center;gap:8px}
+.subhead .subtoggle{flex:1;min-width:0}
+.icset{display:inline-flex;gap:5px;vertical-align:middle}
+.infolink.icb{align-self:center;position:relative;width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid var(--accent);background:var(--surface);color:var(--accent);font:700 12px/1 var(--f-data);padding:0;display:inline-grid;place-items:center;cursor:pointer;text-decoration:none!important}
+.infolink.icb::after{content:"";position:absolute;inset:-8px}
+.infolink.icb.ev{border-color:var(--warn);color:var(--warn)}
+.infolink.icb:hover{background:var(--accent-soft);text-decoration:none}.infolink.icb.ev:hover{background:var(--warn-soft)}
+.evl{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45}
+.h2t{flex:1;min-width:0;font-size:20px;font-weight:700;text-wrap:balance}
+.sh{margin-bottom:0}
+.secct{font-family:var(--f-data);font-size:12.5px;color:var(--muted);white-space:nowrap}
+.secct.done{color:var(--good)}
+.chev{width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:6px;background:var(--sunk);color:var(--muted);transition:transform .15s}
+.chev::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-top:-3px}
+[hidden]{display:none!important}
+.infolink{font:inherit;font-size:13px;font-weight:700;color:var(--accent);background:none;border:0;padding:4px 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;align-self:flex-start}
+.infolink:hover{text-decoration:underline}
+.infolink:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.infolink .ic{width:17px;height:17px;border-radius:50%;border:1.5px solid currentColor;display:inline-grid;place-items:center;font:600 11px/1 var(--f-data);font-style:normal}
+.infobar{margin:2px 0 6px}
+.popwrap{position:fixed;inset:0;z-index:70;background:rgba(8,18,22,.5);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.popcard{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;width:100%;max-width:520px;max-height:80vh;overflow:auto;padding:16px 18px 18px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.poph{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+.poph b{font-size:17px}
+.popb p{margin:8px 0;font-size:15px;line-height:1.5;max-width:60ch}
+.sectoggle[aria-expanded="false"] .chev,.subtoggle[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+h3.subhead{margin:0;padding:0;border-top:0;text-transform:none;letter-spacing:0;font-size:inherit;color:inherit}
+.sub{border-top:1px solid var(--line);scroll-margin-top:150px}
+.subtoggle{font:inherit;background:none;border:0;color:var(--muted);width:100%;display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;text-align:left}
+.subtoggle:hover .subt{color:var(--ink)}
+.subtoggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.subt{flex:1;min-width:0;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.subtoggle .chev{width:20px;height:20px}
+.subbody{padding-bottom:12px}
+.secnav{display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--line)}
+.secbody{padding-top:6px;padding-bottom:6px}
+section.card.scores{border:1.5px solid var(--accent)}
+section.card.scores .sh .code{background:var(--accent)}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.sh .code{font-family:var(--f-data);font-weight:600;font-size:13px;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:2px 7px}
+.sh h2{margin:0;font-size:20px;text-wrap:balance}
+.lead{color:var(--muted);margin:2px 0 12px;max-width:70ch}
+h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:18px 0 8px;border-top:1px solid var(--line);padding-top:14px}
+h3:first-of-type{border-top:0;padding-top:0;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 16px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid transparent}
+.fld.wide{grid-column:1/-1}
+.fld>label,.fld>.lab{font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fld .hint{font-size:12px;color:var(--muted);font-weight:400}
+.fld.src-ai{background:var(--ai-soft);border-color:color-mix(in srgb,var(--ai) 35%,transparent)}
+.fld.src-auto{background:var(--sunk)}
+.tag{font-family:var(--f-data);font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:4px;letter-spacing:.03em}
+.tag.ai{background:var(--ai);color:var(--surface)}
+.tag.auto{background:var(--muted);color:var(--surface)}
+.tag.pt{background:var(--good);color:var(--surface)}
+.fld.src-pt{background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 35%,transparent)}
+.qrow{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.qform{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.qform label{font-weight:700;font-size:14px;display:block;margin-bottom:4px}
+.qref{font-family:var(--f-data);font-weight:600;font-size:16px;background:var(--sunk);padding:3px 9px;border-radius:6px}
+.qsmall{font-size:13px;color:var(--muted);margin:4px 0 0}
+.tag.g{border:1px solid var(--accent);color:var(--accent)}
+.tag.acr{border:1px solid var(--warn);color:var(--warn)}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=datetime-local],textarea,select{font:inherit;font-size:14.5px;width:100%;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)}
+input[type=number]{font-family:var(--f-data)}
+textarea{resize:vertical;min-height:70px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{font:inherit;font-size:13.5px;padding:6px 10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.seg button.on.yes-alert{background:var(--alert);border-color:var(--alert);color:var(--surface)}
+.chk{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer;padding:6px 8px;border-radius:8px}
+.chk input{width:18px;height:18px;margin-top:1px;accent-color:var(--accent);flex:none}
+.chk.src-ai{background:var(--ai-soft)}
+.checklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px 12px}
+.with-mic{position:relative}
+.mic{position:absolute;right:6px;bottom:6px;font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:6px;padding:3px 7px;cursor:pointer}
+.mic.live{background:var(--alert);color:var(--surface);border-color:var(--alert)}
+/* intake */
+.intake{border:1.5px solid var(--ai);background:linear-gradient(var(--ai-soft),var(--surface) 70%)}
+.intake .sh .code{background:var(--ai)}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:13.5px}
+.drop.over{border-color:var(--ai);background:var(--ai-soft)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumb{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;top:2px;right:2px;border:0;border-radius:50%;width:20px;height:20px;background:var(--ink);color:var(--surface);cursor:pointer;font-size:12px;line-height:20px;padding:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.status{font-size:13.5px;color:var(--muted)}
+.status.err{color:var(--alert)}
+.filled{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.filled a{font-size:12.5px;padding:3px 8px;border-radius:999px;background:var(--ai-soft);color:var(--ai);text-decoration:none;border:1px solid color-mix(in srgb,var(--ai) 30%,transparent)}
+/* US grid */
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table.us{border-collapse:collapse;width:100%;min-width:720px;font-size:13.5px}
+table.us th,table.us td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+table.us th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--sunk)}
+table.us td.n{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+table.us tr.side td{background:var(--sunk);font-weight:700;font-size:12.5px}
+table.us input[type=number]{width:84px}
+.mini{display:flex;gap:3px}
+.mini button{font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;cursor:pointer}
+.mini button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.mini button.on.yes-alert{background:var(--alert);border-color:var(--alert);color:var(--surface)}
+td.src-ai{box-shadow:inset 3px 0 0 var(--ai)}
+.over{color:var(--alert);font-weight:700}
+/* panel */
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.pcard h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.big{font-family:var(--f-data);font-size:30px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.big small{font-size:14px;color:var(--muted);font-weight:500}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:4px}
+.pill.alert{background:var(--alert-soft);color:var(--alert)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.neutral{background:var(--sunk);color:var(--muted)}
+.plist{margin:6px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.plist li{display:flex;justify-content:space-between;gap:8px}
+.plist li b{color:var(--ink);font-family:var(--f-data);font-weight:600}
+.redflags{background:var(--alert-soft);border-color:var(--alert)}
+.redflags h4{color:var(--alert)}
+.redflags ul{margin:0;padding-left:18px;font-size:13.5px}
+.next{background:var(--accent-soft);border-color:var(--accent)}
+.next p{margin:4px 0 0;font-size:14px}
+.clock{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--good)}
+.bar i.warn{background:var(--warn)}.bar i.alert{background:var(--alert)}
+/* matrix + summary */
+table.mx{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+table.mx th,table.mx td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+table.mx th{background:var(--sunk);font-size:12.5px}
+table.mx td.hit{background:var(--accent-soft);outline:2px solid var(--accent);outline-offset:-2px;font-weight:700}
+pre.summary{white-space:pre-wrap;font-family:var(--f-data);font-size:12.5px;line-height:1.55;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0;max-height:560px;overflow:auto}
+.ai-out{white-space:pre-wrap;font-size:14.5px;background:var(--ai-soft);border-radius:10px;padding:14px;margin-top:10px}
+table.taper{border-collapse:collapse;width:100%;font-size:13.5px;min-width:420px}
+table.taper th,table.taper td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+table.taper td.n{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+table.taper th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+details.cfg{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--sunk)}
+details.cfg summary{cursor:pointer;font-weight:700;font-size:13.5px}
+.wt{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 16px;margin-top:10px}
+.wt fieldset{border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:0}
+.wt legend{font-size:12.5px;font-weight:700;padding:0 4px}
+.wt label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:2px 0}
+.wt input{width:64px;padding:3px 6px}
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:10px;padding:8px 12px;font-size:13.5px}
+.banner b{color:var(--ink)}
+.ig{font-size:12.5px;color:var(--muted);max-width:1320px;margin:0 auto;padding-block:0 30px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:10px;font-size:13.5px;max-width:min(560px,calc(100vw - 32px));z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.modtabs{display:flex;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.modtabs button{font:inherit;font-weight:700;font-size:14.5px;border:0;background:transparent;color:var(--muted);padding:6px 16px;border-radius:7px;cursor:pointer;letter-spacing:.02em}
+.modtabs button.on{background:var(--accent);color:var(--accent-ink)}
+.modtabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap"><div class="row">
+    <div class="brand"><b id="brandT">GCA Fast-Track Assessment</b><small id="brandS">Referral, triage, ultrasound, biopsy and passport: Parts A–G</small></div>
+    <div class="modtabs" role="tablist" aria-label="Pathway"><button type="button" role="tab" data-mod="gca" id="tab-gca">GCA</button><button type="button" role="tab" data-mod="pmr" id="tab-pmr">PMR</button></div>
+    <div class="pt">
+      <span class="ptname" id="ptname">No patient</span>
+      <span id="newwrap"><button class="btn" id="btnNew" type="button">New patient</button></span>
+      <button class="btn" id="btnExample" type="button">Load example</button>
+    </div>
+  </div></div>
+  <div class="wrap"><nav class="rail" id="rail" aria-label="Sections"></nav><div class="alertstrip" id="alertStrip" hidden></div></div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+    <main id="main"></main>
+  </div>
+  <p class="ig">No patient identifiers are recorded: the app holds age and sex only, and everything is cleared when you close or reload the tab. Text and images sent for AI extraction or summary go to Claude under your own account, so follow your organisation's information-governance policy. This tool supports clinical judgement and does not replace it. GCA: BSR 2020, EULAR 2023 imaging and 2025 management recommendations, 2022 ACR/EULAR classification criteria. PMR: BSR 2026 guideline, EULAR 2025 recommendations, 2012 EULAR/ACR classification criteria, PMR activity score (Leeb 2004).</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="popwrap" id="pop" hidden role="dialog" aria-modal="true" aria-labelledby="popT"><div class="popcard"><div class="poph"><b id="popT"></b><button class="btn" type="button" id="popX">Close</button></div><div class="popb" id="popB"></div></div></div>
+
+<script>
+/* ---------- field schema ---------- */
+const F = {}; const ORDER = [];
+let DEFMOD='gca';
+function d(id, type, label, o = {}) { F[id] = { id, type, label, mod:DEFMOD, ...o }; ORDER.push(id); }
+const YN = 'yn';
+// Patient & referrer
+d('age','num','Age (years)',{tags:['GCAPS','ACR']});
+d('sex','choice','Sex',{opts:['Female','Male'],tags:['GCAPS']}); 
+d('weight','num','Weight (kg)'); d('referrer','text','Referrer: role and contact'); d('ref_dt','dt','Referral date & time');
+d('anticoag','choice','Anticoagulant / antiplatelet',{opts:['None','Antiplatelet','Anticoagulant']});
+d('comorb','multi','Relevant comorbidities',{opts:['Diabetes','Osteoporosis / fracture','Peptic ulcer','Active infection','Glaucoma / cataract','Mental health','Hypertension','Current smoker'],wide:true});
+// Clinical
+d('onset','choice','Symptom onset',{opts:['<6 weeks','6–11 weeks','12–24 weeks','>24 weeks'],tags:['GCAPS']});
+d('headache','choice','New headache',{opts:['None','New temporal','New other site'],tags:['GCAPS','ACR']});
+d('scalp',YN,'Scalp tenderness',{tags:['GCAPS','ACR']});
+d('jaw',YN,'Jaw or tongue claudication',{tags:['GCAPS','ACR'],alert:true});
+d('visual','choice','Visual symptoms',{opts:['None','Transient loss / blurring','Diplopia','Permanent loss'],tags:['GCAPS','ACR'],alertOpts:['Transient loss / blurring','Diplopia','Permanent loss']});
+d('visual_signs',YN,'Visual signs: AION, CRAO, field loss, RAPD',{tags:['GCAPS'],alert:true});
+d('ta_exam','choice','Temporal artery exam',{opts:['Normal','Tender','Thickened','Pulseless'],tags:['GCAPS','ACR']});
+d('pmr',YN,'PMR: shoulder/neck morning stiffness',{tags:['GCAPS','ACR']});
+d('constitutional','choice','Fever, night sweats, weight loss',{opts:['None','Single','Combination'],tags:['GCAPS']});
+d('extracranial','choice','Extracranial arteries',{opts:['None','Thickening','Bruit','Loss of pulse'],tags:['GCAPS'],hint:'LV-GCA'});
+d('arm_bp','num','Arm systolic BP difference (mmHg)');
+d('limb_claud',YN,'Limb claudication',{alert:true}); d('stroke',YN,'Stroke / TIA symptoms',{alert:true});
+d('cn_palsy',YN,'Cranial nerve palsy (III, IV, VI)',{tags:['GCAPS']});
+d('alt_dx',YN,'Alternative diagnosis more likely',{tags:['GCAPS']});
+d('alt_dx_text','area','Alternative diagnosis: details',{wide:true,mic:true});
+// Bloods
+d('bloods_dt','dt','Bloods taken: date & time'); d('crp','num','CRP (mg/L)',{tags:['GCAPS','ACR']}); d('esr','num','ESR (mm/h)',{tags:['ACR']});
+d('pv','num','Plasma viscosity (mPa·s)'); d('plt','num','Platelets (×10⁹/L)'); d('hb','num','Haemoglobin (g/L)');
+d('egfr','num','eGFR (mL/min)'); d('alt','num','ALT (U/L)'); d('glucose','num','Glucose (mmol/L)'); d('hba1c','num','HbA1c (mmol/mol)');
+// GCAPS manual
+d('gcaps_manual','num','GCAPS total from validated calculator',{hint:'used until weights are set'});
+// Steroids
+d('pred_dose','choice','Prednisolone starting dose',{opts:['40 mg','60 mg','Other']}); d('pred_other','num','Other dose (mg)');
+d('ivmp',YN,'IV methylprednisolone given'); d('ivmp_dose','num','IV methylprednisolone dose (mg)');
+d('steroid_dt','dt','First steroid dose: date & time',{hint:'starts the US and TAB clocks'});
+d('ppi','check','PPI started'); d('cad','check','Calcium / vitamin D started'); d('passport','check','Passport and leaflet given');
+// Triage
+d('received_dt','dt','Referral received'); d('triaged_by','text','Triaged by'); d('clinic_dt','dt','Fast-track clinic slot');
+d('us_booked','dt','Ultrasound booked for'); d('triage_outcome','choice','Triage outcome',{opts:['Fast-track clinic','Advice only','Redirected']});
+// B checklist
+const BCHK = [['b_ppi','PPI (age >65, NSAID/anticoagulant/antiplatelet, or ulcer history)'],['b_cad','Calcium + vitamin D'],['b_bone','Bone assessment: bisphosphonate early if age ≥70 or prior fragility fracture'],['b_glucose','Baseline glucose / HbA1c, BP and weight'],['b_noasp','No new aspirin for GCA (continue if already indicated)'],['b_educ','Patient told: do not stop steroids; any visual change → 999 / A&E'],['b_card','Steroid Emergency Card'],['b_tczscreen','TCZ screen if likely: HBV, HCV, HIV, IGRA, lipids']];
+BCHK.forEach(([id,l])=>d(id,'check',l));
+// C ultrasound
+d('us_dt','dt','Scan date & time'); d('sonographer','text','Sonographer / rheumatologist'); d('probe','text','Machine / probe (MHz)');
+d('us_quality','choice','Scan quality',{opts:['Good','Limited']}); d('us_repeat',YN,'Repeat scan'); d('athero',YN,'Atherosclerosis seen');
+const SEGS = [
+  ['r_cst','Right','Common superficial temporal',0.42,0.4,true],['r_fr','Right','Frontal branch',0.34,0.3,true],['r_par','Right','Parietal branch',0.29,0.3,true],['r_ax','Right','Axillary',1.0,1.0,false],
+  ['l_cst','Left','Common superficial temporal',0.42,0.4,true],['l_fr','Left','Frontal branch',0.34,0.3,true],['l_par','Left','Parietal branch',0.29,0.3,true],['l_ax','Left','Axillary',1.0,1.0,false]];
+SEGS.forEach(([k,side,name,cut,og,temp])=>{
+  d(k+'_img',YN,`${side} ${name}: imaged`,{seg:true}); d(k+'_halo',YN,`${side} ${name}: halo`,{seg:true});
+  if(temp) d(k+'_comp',YN,`${side} ${name}: compression sign positive`,{seg:true});
+  d(k+'_imt','num',`${side} ${name}: IMT (mm)`,{seg:true});
+});
+d('us_result','choice','Ultrasound result',{opts:['Positive','Negative','Equivocal','LV-GCA pattern'],hint:'suggested from findings; change if needed'});
+d('us_sites','text','Positive site(s)'); d('us_comment','area','Ultrasound comments',{wide:true,mic:true});
+d('pet_done',YN,'PET-CT done'); d('pet_aorta',YN,'PET-CT: activity throughout aorta',{tags:['ACR']}); d('pet_lv',YN,'PET-CT: large-vessel vasculitis');
+// D TAB
+d('tab_indication','choice','TAB indication',{opts:['US negative, high suspicion','US equivocal','US >72 h after steroids','US unavailable','Other'],wide:true});
+d('tab_side','choice','Side',{opts:['Right','Left']}); d('tab_surgeon','text','Surgical team'); d('tab_dt','date','TAB date');
+d('tab_consent','check','Consent taken (bleeding, infection, scar, facial nerve, non-diagnostic sample)'); d('tab_ac','check','Anticoagulant plan agreed; steroids continue');
+d('tab_mark','check','Artery course Doppler-marked'); d('tab_form','check','Histology form: "?GCA, multiple levels", days on steroids stated');
+d('tab_len','num','Specimen length after fixation (cm)'); d('tab_result','choice','TAB result',{opts:['Positive','Healed / indeterminate','Negative','Inadequate'],tags:['ACR']});
+// E decision
+d('decision','choice','Diagnosis',{opts:['GCA confirmed','Not GCA','Pending']}); d('dx_basis','multi','Confirmed by',{opts:['Ultrasound','TAB','PET-CT','Clinical']});
+d('dx_type','multi','Phenotype',{opts:['Cranial','Large-vessel','With PMR']}); d('consultant','text','Consultant'); d('dx_date','date','Decision date');
+d('alt_final','text','If not GCA: working diagnosis'); d('plan','area','Plan and notes',{wide:true,mic:true});
+// F ongoing
+d('sparing','choice','Steroid-sparing therapy',{opts:['None','Tocilizumab','Methotrexate','Upadacitinib','Clinical trial']});
+d('taper_start','num','Taper start dose (mg)',{hint:'auto from starting dose'});
+[['f_dexa','DEXA / FRAX requested'],['f_bis','Bisphosphonate or alternative per NOGG'],['f_pjp','PJP prophylaxis considered (≥20 mg for >4 weeks, or TCZ)'],['f_vacc','Vaccines: influenza, COVID-19, pneumococcal, Shingrix; no live vaccines'],['f_bp','BP, glucose, weight, mood and eye checks planned'],['f_sick','Sick-day rules explained']].forEach(([id,l])=>d(id,'check',l));
+d('next_review','date','Next review');
+// G passport
+[['g1','Diagnosis and confirmatory test recorded'],['g2','Taper plan written in the steroid diary'],['g3','PPI, bone protection, calcium/vitamin D prescribed or considered'],['g4','PJP prophylaxis considered; vaccines advised'],['g5','Steroid Emergency Card given; sick-day rules explained'],['g6','Knows what to do in a flare and in an emergency'],['g7','2–4 week side-effect check booked (BP, glucose)'],['g8','Follow-up booked; leaflet given'],['g9','Steroid-sparing therapy discussed'],['g10','Research consent / GCA database entry']].forEach(([id,l])=>d(id,'check',l));
+// intake
+d('intake_text','area','Referral text',{mic:true}); d('extra_notes','area','Information not matched to a field',{wide:true,mic:true});
+/* ---------- shared fields + PMR fields ---------- */
+['age','sex','weight','referrer','ref_dt','anticoag','comorb','headache','scalp','jaw','visual','visual_signs','constitutional','bloods_dt','crp','esr','pv','plt','hb','egfr','alt','glucose','hba1c'].forEach(id=>{ F[id].mod='shared'; });
+F.crp.ptags=['2012']; F.esr.ptags=['2012']; F.age.ptags=['2012'];
+DEFMOD='pmr';
+// A: core features
+d('p_shoulder','choice','Shoulder girdle aching',{opts:['Bilateral','Unilateral','None'],ptags:['2012']});
+d('p_hip','choice','Hip girdle pain or limited hip movement',{opts:['Bilateral','Unilateral','None'],ptags:['2012']});
+d('p_neck',YN,'Neck pain or stiffness');
+d('p_stiff_min','num','Morning stiffness (minutes)',{ptags:['2012']});
+d('p_duration','num','Symptom duration (weeks)');
+d('p_onset','choice','Onset',{opts:['Abrupt (days)','Subacute (weeks)','Gradual (months)']});
+d('p_other_joints','choice','Other joints',{opts:['None','Other joint pain','Peripheral synovitis'],ptags:['2012']});
+d('p_shoulder_rom',YN,'Painful, restricted active shoulder movement');
+d('p_weakness',YN,'True muscle weakness (not pain-limited)',{alert:true});
+d('p_tender',YN,'Widespread tenderness / fibromyalgia features');
+// A: red flags
+d('p_wtloss',YN,'Significant weight loss',{alert:true}); d('p_night',YN,'Night pain or pain at rest',{alert:true});
+d('p_neuro',YN,'Neurological signs',{alert:true}); d('p_fever',YN,'Fever or prominent systemic upset',{alert:true});
+d('p_cancer',YN,'Previous cancer'); d('p_bone',YN,'Focal bone pain or tenderness',{alert:true});
+d('p_mimics','multi','Possible mimics to consider',{opts:['Statin started recently','Hypothyroid symptoms','Recent infection','Rotator cuff / OA','Fibromyalgia','Parkinsonism','RA features','CPPD / gout','Myositis features'],wide:true});
+d('p_received','dt','Referral received'); d('p_triaged_by','text','Triaged by');
+d('p_triage','choice','Triage outcome',{opts:['Primary care with plan','Advice & guidance','Rheumatology clinic','Fast-track (atypical)','Same-day GCA pathway'],wide:true});
+// B: investigations
+d('p_calcium','num','Adjusted calcium (mmol/L)'); d('p_alp','num','ALP (U/L)'); d('p_tsh','num','TSH (mU/L)'); d('p_ck','num','CK (U/L)');
+const TRI=['Negative','Positive','Not done'];
+d('p_rf','choice','Rheumatoid factor',{opts:TRI,ptags:['2012']}); d('p_ccp','choice','Anti-CCP',{opts:TRI,ptags:['2012']});
+d('p_ana','choice','ANA (if CTD features)',{opts:TRI});
+d('p_electro','choice','Protein electrophoresis',{opts:['Normal','Paraprotein','Not done']});
+d('p_sflc','choice','Serum free light chains / urine BJP',{opts:['Normal','Abnormal','Not done']});
+d('p_urine','choice','Urine dipstick',{opts:['Normal','Abnormal','Not done']});
+d('p_cxr','choice','Chest X-ray (if systemic features)',{opts:['Normal','Abnormal','Not done','Not indicated']});
+d('p_vitd','num','Vitamin D (nmol/L)');
+// C: imaging
+d('p_us_done',YN,'Shoulder / hip ultrasound done',{ptags:['2012']});
+d('p_us_shhip',YN,'US: ≥1 shoulder (subdeltoid bursitis, biceps tenosynovitis or glenohumeral synovitis) AND ≥1 hip (synovitis or trochanteric bursitis)',{wide:true,ptags:['2012']});
+d('p_us_both',YN,'US: both shoulders show subdeltoid bursitis, biceps tenosynovitis or glenohumeral synovitis',{wide:true,ptags:['2012']});
+d('p_pet',YN,'PET-CT or large-vessel imaging done'); d('p_pet_lv',YN,'Large-vessel vasculitis on imaging',{alert:true});
+// D: start
+d('p_dose','choice','Starting treatment',{opts:['Prednisolone 15 mg','Prednisolone 20 mg','Prednisolone 25 mg','IM methylprednisolone 120 mg']});
+d('p_steroid_dt','dt','First dose: date & time',{hint:'starts the review clock'});
+[['p_d_bloods','Pre-steroid bloods taken before the first dose'],['p_d_gcawarn','GCA warning symptoms explained: same-day help for new headache, jaw pain or any visual change'],['p_d_bone','Bone health: FRAX / DEXA; bisphosphonate + calcium/vitamin D unless contraindicated'],['p_d_ppi','PPI if GI risk factors'],['p_d_base','Baseline HbA1c, BP and weight'],['p_d_card','Steroid Emergency Card and sick-day rules'],['p_d_leaflet','Leaflet and PMRGCAuk details given'],['p_d_review','Response review booked at 2–3 weeks']].forEach(([id,l])=>d(id,'check',l));
+// E: review + decision
+d('p_rev_dt','date','Review date'); d('p_improve','num','Global improvement since starting (%)');
+d('p_crp_now','num','CRP now (mg/L)'); d('p_stiff_now','num','Morning stiffness now (min)');
+d('p_vas_pain','num','Patient pain VAS (0–10)'); d('p_vas_phys','num','Physician global VAS (0–10)');
+d('p_eul','choice','Elevation of upper limbs (EUL)',{opts:['0: above shoulder girdle','1: to shoulder girdle','2: below shoulder girdle','3: cannot elevate'],wide:true});
+d('p_decision','choice','Diagnosis',{opts:['PMR confirmed','Not PMR','Uncertain: refer']}); d('p_alt','text','If not PMR: working diagnosis');
+d('p_managed','choice','Managed by',{opts:['Primary care with plan','Shared care','Rheumatology-led']});
+d('p_clinician','text','Clinician'); d('p_dx_date','date','Decision date'); d('p_plan','area','Plan and notes',{wide:true,mic:true});
+// F: follow-up
+d('p_taper','choice','Taper plan',{opts:['EULAR 2025 (stop ~11 months)','Slower (stop ~15 months)','IM methylprednisolone (local protocol)'],wide:true});
+d('p_sparing','choice','Steroid-sparing therapy',{opts:['None','Methotrexate','Sarilumab','Tocilizumab','Clinical trial']});
+d('p_relapses','num','Relapses so far'); d('p_next','date','Next review');
+[['p_f_3m','Review at least every 3 months in year 1, then at least annually'],['p_f_dexa','DEXA at diagnosis; repeat every 3 years, after a fracture or after stopping steroids'],['p_f_vacc','Vaccines: influenza, COVID-19, pneumococcal, Shingrix'],['p_f_checks','HbA1c, BP, weight, eyes, mood and sleep checked'],['p_f_relplan','Relapse plan written: back to last effective dose and contact the team'],['p_f_gcaq','GCA symptoms asked about at every review and relapse']].forEach(([id,l])=>d(id,'check',l));
+// G: passport
+[['p_g1','Diagnosis and how it was made recorded'],['p_g2','Taper plan with dates written in the steroid diary'],['p_g3','Bone protection, calcium/vitamin D and PPI considered'],['p_g4','Steroid Emergency Card and sick-day rules'],['p_g5','GCA warning symptoms explained'],['p_g6','Relapse plan and who to call'],['p_g7','Diet, activity and pacing advice; PMRGCAuk'],['p_g8','Vaccines advised'],['p_g9','Next review booked']].forEach(([id,l])=>d(id,'check',l));
+d('p_intake_text','area','Referral text',{mic:true}); d('p_extra_notes','area','Information not matched to a field',{wide:true,mic:true});
+
+
+/* ---------- state ---------- */
+let S = { v:{}, src:{} };
+let isExample = false;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const has = v => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && !v.length);
+const val = id => S.v[id];
+
+/* ---------- control rendering ---------- */
+const EVID={
+ gca:{
+  age:['GCAPS: age band','2022 ACR/EULAR: entry criterion, age ≥50 at diagnosis'],
+  sex:['GCAPS: sex'],
+  onset:['GCAPS: symptom duration'],
+  headache:['GCAPS: head or scalp pain','2022 ACR/EULAR: new temporal headache, +2'],
+  scalp:['GCAPS: head or scalp pain','2022 ACR/EULAR: scalp tenderness, +2'],
+  jaw:['GCAPS: ischaemic features','2022 ACR/EULAR: jaw or tongue claudication, +2','BSR 2020: ischaemic features favour prednisolone 60 mg'],
+  visual:['GCAPS: ischaemic / visual features','2022 ACR/EULAR: sudden visual loss, +3','BSR 2020: visual symptoms need same-day ophthalmology'],
+  visual_signs:['GCAPS: visual signs (AION, CRAO, field loss, RAPD)','BSR 2020: same-day ophthalmology'],
+  ta_exam:['GCAPS: temporal artery examination','2022 ACR/EULAR: abnormal temporal artery exam, +2'],
+  pmr:['GCAPS: polymyalgic symptoms','2022 ACR/EULAR: morning stiffness in shoulders/neck, +2'],
+  constitutional:['GCAPS: constitutional symptoms'],
+  extracranial:['GCAPS: extracranial artery findings','BSR 2020 / EULAR 2023: suspect large-vessel GCA'],
+  arm_bp:['BSR 2020: arm BP difference >10 mmHg suggests large-vessel GCA'],
+  limb_claud:['BSR 2020: large-vessel GCA red flag'], stroke:['BSR 2020: same-day stroke assessment'],
+  cn_palsy:['GCAPS: cranial nerve palsy'], alt_dx:['GCAPS: alternative diagnosis more likely (lowers score)'],
+  crp:['GCAPS: CRP band','2022 ACR/EULAR: CRP ≥10 mg/L or ESR ≥50 mm/h, +3'],
+  esr:['2022 ACR/EULAR: ESR ≥50 mm/h or CRP ≥10 mg/L, +3'],
+  pred_dose:['BSR 2020 / NICE CKS: prednisolone 40–60 mg; 60 mg if visual or ischaemic features'],
+  ivmp:['BSR 2020: IV methylprednisolone 500 mg–1 g daily for up to 3 days for visual loss'],
+  steroid_dt:['EULAR 2023: ultrasound within 72 h of starting steroids','BSR 2020 / ACR 2021: biopsy within 14 days of starting steroids'],
+  us_dt:['EULAR 2023: scan within 72 h of the first steroid dose'],
+  us_result:['2022 ACR/EULAR: temporal halo, +5','EULAR 2023: non-compressible halo confirms GCA when probability is intermediate or high'],
+  pet_aorta:['2022 ACR/EULAR: FDG-PET activity throughout the aorta, +2'],
+  tab_len:['BSR 2020 / ACR 2021: specimen ≥1 cm after fixation'],
+  tab_dt:['BSR 2020: biopsy within 14 days of starting steroids'],
+  tab_result:['2022 ACR/EULAR: positive biopsy, +5'],
+  gcaps_manual:['Southend GCAPS: low <9, intermediate 9–12, high >12'],
+  sparing:['NICE TA518: tocilizumab for relapsing/refractory GCA, up to 1 year','EULAR 2025: tocilizumab or upadacitinib; methotrexate as alternative']},
+ pmr:{
+  age:['2012 EULAR/ACR: required, age ≥50','BSR 2026: core feature; age under 60 is atypical (refer)'],
+  sex:['EULAR 2015: female sex is a relapse-risk factor'],
+  p_shoulder:['2012 EULAR/ACR: required, bilateral shoulder aching','BSR 2026: core feature'],
+  p_hip:['2012 EULAR/ACR: hip pain or limited range of motion, +1','BSR 2026: core feature'],
+  p_stiff_min:['2012 EULAR/ACR: morning stiffness >45 min, +2','BSR 2026: core feature'],
+  p_duration:['BSR 2026: core feature, symptoms ≥2 weeks; over 2 months is atypical'],
+  p_onset:['BSR 2026: chronic onset is atypical (refer)'],
+  p_other_joints:['2012 EULAR/ACR: absence of other joint pain, +1','EULAR 2015: peripheral arthritis is a relapse-risk factor'],
+  p_weakness:['BSR 2026: true weakness suggests myositis (refer)'],
+  headache:['BSR 2026: GCA symptom, same-day GCA assessment'], scalp:['BSR 2026: GCA symptom, same-day GCA assessment'],
+  jaw:['BSR 2026: GCA symptom, same-day GCA assessment'], visual:['BSR 2026: GCA symptom, same-day assessment and ophthalmology'],
+  visual_signs:['BSR 2026: same-day GCA assessment'], constitutional:['BSR 2026: prominent systemic features are atypical; consider GCA, infection or malignancy'],
+  p_wtloss:['BSR 2026: red flag for malignancy or infection'], p_night:['BSR 2026: red flag for malignancy or infection'],
+  p_neuro:['BSR 2026: red flag'], p_fever:['BSR 2026: red flag for infection or GCA'], p_bone:['BSR 2026: red flag for malignancy'],
+  crp:['2012 EULAR/ACR: required, raised CRP and/or ESR','BSR 2026: core feature; normal or very high values are atypical'],
+  esr:['2012 EULAR/ACR: required, raised CRP and/or ESR','EULAR 2015: ESR >40 mm/h is a relapse-risk factor'],
+  p_rf:['2012 EULAR/ACR: absence of RF and anti-CCP, +2'], p_ccp:['2012 EULAR/ACR: absence of RF and anti-CCP, +2'],
+  p_electro:['BSR pre-steroid screen: exclude myeloma'], p_sflc:['BSR pre-steroid screen: exclude myeloma'],
+  p_calcium:['BSR pre-steroid screen: malignancy, myeloma, hyperparathyroidism'], p_tsh:['BSR pre-steroid screen: thyroid disease mimics PMR'], p_ck:['BSR pre-steroid screen: exclude myositis'],
+  p_us_done:['2012 EULAR/ACR: with ultrasound, PMR at ≥5 of 8'], p_us_shhip:['2012 EULAR/ACR: ultrasound, +1'], p_us_both:['2012 EULAR/ACR: ultrasound, +1'],
+  p_pet_lv:['EULAR 2025: large-vessel vasculitis changes management to GCA pathway'],
+  p_dose:['BSR 2026: typically prednisolone 15 mg','EULAR 2025: 15–25 mg; IM methylprednisolone is an alternative'],
+  p_steroid_dt:['BSR 2026: review response at 2–3 weeks; refer if steroids continue ≥18 months'],
+  p_improve:['BSR / EULAR: expect ≥70% global improvement; less suggests another diagnosis'],
+  p_crp_now:['PMR-AS component: CRP in mg/dL (mg/L ÷ 10)'], p_stiff_now:['PMR-AS component: minutes × 0.1'],
+  p_vas_pain:['PMR-AS component: patient pain VAS 0–10'], p_vas_phys:['PMR-AS component: physician global VAS 0–10'], p_eul:['PMR-AS component: elevation of upper limbs 0–3'],
+  p_relapses:['BSR 2026: first relapse, discuss; second relapse, refer'],
+  p_taper:['EULAR 2025: 10 mg within 1–2 months, stop within a year if possible'],
+  p_sparing:['EULAR 2025: sarilumab preferred for relapsing/refractory PMR; methotrexate alternative','BSR 2026: consider early methotrexate']}};
+function tagHTML(f){ return ''; }
+function icons(f){ const id=f.id; let h='';
+  if(f.hint) h+=`<button type="button" class="infolink icb" data-tipt="${esc(f.hint.charAt(0).toUpperCase()+f.hint.slice(1))}." data-title="${esc(f.label)}" aria-label="About ${esc(f.label)}">?</button>`;
+  if(EVID[MOD][id]) h+=`<button type="button" class="infolink icb ev" data-ev="${id}" aria-label="Evidence for ${esc(f.label)}">E</button>`;
+  return h?`<span class="icset">${h}</span>`:''; }
+function control(f){
+  const v = S.v[f.id], id = f.id;
+  switch(f.type){
+    case 'yn': return `<div class="seg" role="group" aria-label="${esc(f.label)}">${[['Yes',true],['No',false]].map(([l,b])=>`<button type="button" data-f="${id}" data-v="${b}" class="${v===b?'on':''} ${b&&f.alert?'yes-alert':''}" aria-pressed="${v===b}">${l}</button>`).join('')}</div>`;
+    case 'choice': return `<div class="seg" role="group" aria-label="${esc(f.label)}">${f.opts.map(o=>`<button type="button" data-f="${id}" data-v="${esc(o)}" class="${v===o?'on':''} ${(f.alertOpts||[]).includes(o)?'yes-alert':''}" aria-pressed="${v===o}">${esc(o)}</button>`).join('')}</div>`;
+    case 'multi': return `<div class="seg" role="group" aria-label="${esc(f.label)}">${f.opts.map(o=>{const on=(v||[]).includes(o);return `<button type="button" data-f="${id}" data-m="${esc(o)}" class="${on?'on':''}" aria-pressed="${on}">${esc(o)}</button>`}).join('')}</div>`;
+    case 'area': return `<div class="with-mic"><textarea id="in_${id}" data-f="${id}" rows="3">${esc(v)}</textarea>${f.mic?`<button type="button" class="mic" data-mic="${id}">Dictate</button>`:''}</div>`;
+    case 'num': return `<input type="number" step="any" id="in_${id}" data-f="${id}" value="${esc(v)}">`;
+    case 'date': return `<input type="date" id="in_${id}" data-f="${id}" value="${esc(v)}">`;
+    case 'dt': return `<input type="datetime-local" id="in_${id}" data-f="${id}" value="${esc(v)}">`;
+    default: return `<div class="with-mic"><input type="text" id="in_${id}" data-f="${id}" value="${esc(v)}"></div>`;
+  }
+}
+function srcTag(id){ const s=S.src[id]; return s==='ai'?'<span class="tag ai">AI</span>':s==='auto'?'<span class="tag auto">AUTO</span>':s==='pt'?'<span class="tag pt">PATIENT</span>':''; }
+function field(id){
+  const f=F[id];
+  if(f.type==='check'){ return `<label class="chk ${S.src[id]==='ai'?'src-ai':''}" data-wrap="${id}"><input type="checkbox" id="in_${id}" data-f="${id}" ${S.v[id]?'checked':''}><span>${esc(f.label)} <span data-badge="${id}">${srcTag(id)}</span></span></label>`; }
+  return `<div class="fld ${f.wide?'wide':''} ${['ai','auto','pt'].includes(S.src[id])?'src-'+S.src[id]:''}" data-wrap="${id}" id="w_${id}">
+    <div class="lab">${esc(f.label)} ${icons(f)} <span data-badge="${id}">${srcTag(id)}</span></div>
+    <div class="ctl" data-ctl="${id}">${control(f)}</div></div>`;
+}
+const grid = ids => `<div class="grid">${ids.map(field).join('')}</div>`;
+const checklist = ids => `<div class="checklist">${ids.map(field).join('')}</div>`;
+
+/* ---------- sections ---------- */
+const SECTIONS = [
+  {id:'intake',code:'IN',title:'Referral information',short:'Referral info'},
+  {id:'a',code:'A',title:'Referral & triage',short:'Triage'},
+  {id:'b',code:'B',title:'Immediate management',short:'Same-day'},
+  {id:'c',code:'C',title:'Temporal & axillary ultrasound',short:'Ultrasound'},
+  {id:'d',code:'D',title:'Temporal artery biopsy',short:'Biopsy'},
+  {id:'e',code:'E',title:'Decision & summary',short:'Decision'},
+  {id:'f',code:'F',title:'Ongoing management',short:'Follow-up'},
+  {id:'g',code:'G',title:'Patient passport',short:'Passport'}];
+const SECFIELDS = {
+  a:['age','sex','weight','referrer','ref_dt','anticoag','comorb','onset','headache','scalp','jaw','visual','visual_signs','ta_exam','pmr','constitutional','extracranial','arm_bp','limb_claud','stroke','cn_palsy','alt_dx','bloods_dt','crp','esr','plt','pred_dose','steroid_dt','received_dt','triage_outcome'],
+  b:BCHK.map(x=>x[0]), c:['us_dt','us_quality','us_result'].concat(SEGS.map(s=>s[0]+'_halo')),
+  d:['tab_indication','tab_dt','tab_len','tab_result'], e:['decision','dx_basis','consultant','dx_date'],
+  f:['sparing','f_dexa','f_bis','f_pjp','f_vacc','f_bp','f_sick','next_review'], g:['g1','g2','g3','g4','g5','g6','g7','g8','g9','g10']};
+
+function renderGCAView(){
+  const m = $('#main');
+  m.innerHTML = `
+  ${isExample?`<div class="banner" id="exbanner"><span><b>Example (fictional).</b> Press <b>New patient</b> to start.</span></div>`:''}
+  <section class="card intake" id="sec-intake">
+    <div class="sh"><span class="code">IN</span><h2>Referral information</h2></div>
+    <p class="lead">Paste a referral letter or ED note, dictate a history, or add photos of a paper referral form. Claude reads it and fills in every field below that the source mentions. Filled fields are marked <span class="tag ai">AI</span>; check them and change anything that is wrong. Remove identifiers first: NHS numbers, dates of birth, names, postcodes and phone numbers typed in the text are stripped automatically before sending, but crop or cover them on photos yourself.</p>
+    <div class="fld wide" style="padding:0">${control(F.intake_text)}</div>
+    <div class="drop" id="drop" style="margin-top:10px">
+      <span id="imgnote">Photos of referral forms or results</span>
+      <label class="btn" for="imgIn">Add photos</label><input type="file" id="imgIn" accept="image/*" multiple hidden>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+    <div class="actions">
+      <button class="btn ai" id="btnExtract" type="button">Extract and fill the form</button>
+      <button class="btn" id="btnStop" type="button" hidden>Stop</button>
+      <span class="status" id="exStatus"></span>
+    </div>
+    <div class="filled" id="filled"></div>
+    <div class="qrow"><button class="btn primary" type="button" id="btnQ">Send pre-clinic questionnaire</button></div>
+  </section>
+
+  <section class="card" id="sec-a">
+    <div class="sh"><span class="code">A</span><h2>Referral & triage</h2></div>
+    <p class="lead">Tap <b>?</b> beside a question for help filling it in, and <b>E</b> to see which score or guideline it feeds. The Southend GCAPS and 2022 ACR/EULAR scores update live in <b>Scores & next step</b> at the end.</p>
+    <h3>Patient & referrer: no names, dates of birth or NHS numbers are recorded; age and sex only</h3>${grid(['age','sex','weight','referrer','ref_dt','anticoag','comorb'])}
+    <h3>Clinical features</h3>${grid(['onset','headache','scalp','jaw','visual','visual_signs','ta_exam','pmr','constitutional','extracranial','arm_bp','limb_claud','stroke','cn_palsy','alt_dx','alt_dx_text'])}
+    <h3>Bloods: take before steroids, but do not delay steroids</h3>${grid(['bloods_dt','crp','esr','pv','plt','hb','egfr','alt','glucose','hba1c'])}
+    <h3>Southend GCA probability score (GCAPS)</h3><div id="gcapsBox"></div>
+    <h3>Steroids given</h3>${grid(['pred_dose','pred_other','ivmp','ivmp_dose','steroid_dt'])}${checklist(['ppi','cad','passport'])}
+    <h3>Rheumatology triage</h3>${grid(['received_dt','triaged_by','clinic_dt','us_booked','triage_outcome'])}
+  </section>
+
+  <section class="card" id="sec-b">
+    <div class="sh"><span class="code">B</span><h2>Immediate management</h2></div>
+    <p class="lead" id="doseAdvice"></p>
+    ${checklist(BCHK.map(x=>x[0]))}
+  </section>
+
+  <section class="card" id="sec-c">
+    <div class="sh"><span class="code">C</span><h2>Temporal & axillary ultrasound</h2></div>
+    <p class="lead">Scan within 72 hours of the first steroid dose. IMT is single-wall intima-media thickness in mm, measured against the EULAR 2023 cut-offs. The ultrasound score (OGUS) and a suggested result update from the table.</p>
+    <h3>Scan details</h3>${grid(['us_dt','sonographer','probe','us_quality','us_repeat','athero'])}
+    <h3>Findings per segment</h3><div id="usTable"></div>
+    <h3>Result</h3>${grid(['us_result','us_sites','pet_done','pet_aorta','pet_lv','us_comment'])}
+    <h3>Report text</h3><pre class="summary" id="usReport"></pre>
+    <div class="actions"><button class="btn" type="button" data-copy="usReport">Copy report</button></div>
+  </section>
+
+  <section class="card" id="sec-d">
+    <div class="sh"><span class="code">D</span><h2>Temporal artery biopsy</h2></div>
+    <p class="lead">Biopsy only when Part E calls for it, within 14 days of starting steroids, with a specimen of at least 1 cm after fixation. A negative biopsy does not exclude GCA.</p>
+    <h3>Request</h3>${grid(['tab_indication','tab_side','tab_surgeon','tab_dt'])}
+    <h3>Pre-procedure checklist</h3>${checklist(['tab_consent','tab_ac','tab_mark','tab_form'])}
+    <h3>Result</h3>${grid(['tab_len','tab_result'])}<p class="status" id="tabNote"></p>
+  </section>
+
+  <section class="card" id="sec-e">
+    <div class="sh"><span class="code">E</span><h2>Decision & summary</h2></div>
+    <p class="lead">Read the test result against the pretest probability. The highlighted cell is where this patient sits now.</p>
+    <div class="tblwrap" id="matrix"></div>
+    <h3>Decision</h3>${grid(['decision','dx_basis','dx_type','consultant','dx_date','alt_final','plan'])}
+    <h3>Summary for review</h3>
+    <pre class="summary" id="summary"></pre>
+    <div class="actions">
+      <button class="btn primary" type="button" data-copy="summary">Copy summary</button>
+      <button class="btn" type="button" id="btnDlMd">Download summary (.md)</button>
+      <button class="btn" type="button" id="btnDlJson">Download data (.json)</button>
+      <button class="btn ai" type="button" id="btnAiSum">Draft clinic letter with Claude</button>
+      <span class="status" id="sumStatus"></span>
+    </div>
+    <div class="ai-out" id="aiSum" hidden></div>
+  </section>
+
+  <section class="card" id="sec-f">
+    <div class="sh"><span class="code">F</span><h2>Ongoing management</h2></div>
+    <p class="lead">Aim for 15–20 mg by months 2–3 and none by 12–18 months. The example taper below is generated from the start dose and the first steroid dose date; adjust it to the patient.</p>
+    ${grid(['sparing','taper_start','next_review'])}
+    <h3>Example prednisolone taper</h3><div class="tblwrap" id="taper"></div>
+    <h3>Steroid safety bundle</h3>${checklist(['f_dexa','f_bis','f_pjp','f_vacc','f_bp','f_sick'])}
+  </section>
+
+  <section class="card" id="sec-g">
+    <div class="sh"><span class="code">G</span><h2>Patient passport</h2></div>
+    <p class="lead">Tick these at the first visit. The passport front page below is built from the form, ready to copy into the printed passport or the patient's record.</p>
+    ${checklist(['g1','g2','g3','g4','g5','g6','g7','g8','g9','g10'])}
+    <h3>Passport front page</h3><pre class="summary" id="passportOut"></pre>
+    <div class="actions"><button class="btn" type="button" data-copy="passportOut">Copy passport page</button></div>
+    <h3>Anything else</h3>${grid(['extra_notes'])}
+  </section>${scoresSection()}`;
+  collapsify(); renderUS(); renderGcaps(); initImages(); recompute();
+}
+
+/* ---------- US table ---------- */
+function mini(id, alert){ const v=S.v[id]; return `<div class="mini">${[['Y',true],['N',false]].map(([l,b])=>`<button type="button" data-f="${id}" data-v="${b}" class="${v===b?'on':''} ${b&&alert?'yes-alert':''}" aria-pressed="${v===b}" aria-label="${esc(F[id].label)} ${l}">${l}</button>`).join('')}</div>`; }
+function renderUS(){
+  let h=`<table class="us"><thead><tr><th>Segment</th><th>Imaged</th><th>Halo</th><th>Compression +</th><th>IMT mm</th><th>Cut-off</th><th>IMT ÷ OGUS ref</th></tr></thead><tbody>`;
+  let side='';
+  SEGS.forEach(([k,sd,name,cut,og,temp])=>{
+    if(sd!==side){side=sd;h+=`<tr class="side"><td colspan="7">${sd}</td></tr>`;}
+    const ai=id=>S.src[id]==='ai'?'src-ai':'';
+    h+=`<tr><td>${name}</td><td class="${ai(k+'_img')}">${mini(k+'_img')}</td><td class="${ai(k+'_halo')}">${mini(k+'_halo',true)}</td><td class="${temp?ai(k+'_comp'):''}">${temp?mini(k+'_comp',true):'<span class="status">n/a</span>'}</td>
+      <td class="${ai(k+'_imt')}"><input type="number" step="0.01" id="in_${k}_imt" data-f="${k}_imt" value="${esc(S.v[k+'_imt'])}" aria-label="${esc(F[k+'_imt'].label)}"></td>
+      <td class="n">${temp&&k.endsWith('par')?'0.29–0.36':temp&&k.endsWith('cst')?'0.42–0.44':cut.toFixed(2)}</td><td class="n" id="og_${k}">–</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  $('#usTable').innerHTML=`<div class="tblwrap">${h}</div><p class="status" id="ogusLine" style="margin-top:8px"></p>`;
+}
+
+/* ---------- GCAPS ---------- */
+const GDOM = [
+  ['age','Age',['≤49','50–60','61–65','>65']],['sex','Sex',['Male','Female']],['onset','Symptom onset',['>24 weeks','12–24 weeks','6–11 weeks','<6 weeks']],
+  ['crp','CRP (mg/L)',['0–5','6–10','11–24','≥25']],['cranial','Head / scalp pain',['No','Yes']],['constitutional','Constitutional',['None','Single','Combination']],
+  ['pmr','Polymyalgia',['No','Yes']],['ischaemic','Ischaemic: blurring, diplopia, amaurosis, jaw/tongue',['No','Yes']],['vsigns','Visual signs: AION, CRAO, field loss, RAPD',['No','Yes']],
+  ['ta','Temporal artery',['Normal','Tender','Thickened','Pulseless']],['extra','Extracranial artery',['None','Thickening','Bruit','Loss of pulse']],['cn','Cranial nerve palsy',['No','Yes']],['alt','Alternative diagnosis',['No','Yes']]];
+let W = {};
+try{ W = JSON.parse(localStorage.getItem('gcaps_weights')||'{}')||{}; }catch(e){ W={}; }
+function gcapsSel(){
+  const a=ageNow(), crp=num(val('crp')), v=val('visual');
+  return {
+    age: a==null?null: a<=49?'≤49':a<=60?'50–60':a<=65?'61–65':'>65',
+    sex: val('sex')||null, onset: val('onset')||null,
+    crp: crp==null?null: crp<=5?'0–5':crp<=10?'6–10':crp<25?'11–24':'≥25',
+    cranial: (has(val('headache'))||has(val('scalp'))) ? ((val('headache')&&val('headache')!=='None')||val('scalp')===true?'Yes':'No') : null,
+    constitutional: val('constitutional')||null, pmr: yn(val('pmr')),
+    ischaemic: (has(v)||has(val('jaw'))) ? ((v&&v!=='None'&&v!=='Permanent loss')||val('jaw')===true?'Yes':'No') : null,
+    vsigns: has(val('visual_signs'))||v==='Permanent loss' ? (val('visual_signs')===true||v==='Permanent loss'?'Yes':'No') : null,
+    ta: val('ta_exam')||null, extra: val('extracranial')||null, cn: yn(val('cn_palsy')), alt: yn(val('alt_dx'))};
+}
+const yn = b => b===true?'Yes':b===false?'No':null;
+function gcapsCalc(){
+  const sel=gcapsSel(); let total=0, weighted=0, answered=0, missingW=[];
+  GDOM.forEach(([k])=>{ const o=sel[k]; if(o==null) return; answered++; const w=W[k+'|'+o]; if(w===undefined||w===''||isNaN(+w)) missingW.push(k); else { weighted++; total+=+w; } });
+  const configured = GDOM.every(([k,,opts])=>opts.every(o=>W[k+'|'+o]!==undefined&&W[k+'|'+o]!==''));
+  if(configured && answered===GDOM.length) return {mode:'calc',total,answered,sel};
+  const m=num(val('gcaps_manual')); if(m!=null) return {mode:'manual',total:m,answered,sel,configured};
+  return {mode:'none',answered,sel,configured};
+}
+const band = t => t==null?null: t<9?'Low':t<=12?'Intermediate':'High';
+function renderGcaps(){
+  const sel=gcapsSel();
+  $('#gcapsBox').innerHTML = `
+    <div class="infobar">${infoBtn('Southend GCA probability score', `<p>All 13 GCAPS domains are taken from the fields above, as listed below. Bands: low &lt;9, intermediate 9–12, high &gt;12. Until your team enters the verified points for each option (from Laskou et al., <i>Clin Exp Rheumatol</i> 2019) under <b>Scoring weights</b>, enter the total from your validated calculator.</p>`, 'How GCAPS works')}</div>
+    <div class="tblwrap"><table class="us" style="min-width:480px"><thead><tr><th>Domain</th><th>This patient</th><th>Points</th></tr></thead><tbody id="gRows"></tbody></table></div>
+    <div class="grid" style="margin-top:10px">${field('gcaps_manual')}</div>
+    <details class="cfg"><summary>Scoring weights (set once per team; saved in this browser)</summary>
+      <p class="status">Enter the published points for every option, then check three known cases against your calculator. Once every option has a value, the app calculates GCAPS live and ignores the manual total.</p>
+      <div class="wt">${GDOM.map(([k,l,opts])=>`<fieldset><legend>${esc(l)}</legend>${opts.map(o=>`<label>${esc(o)} <input type="number" step="0.5" data-w="${k}|${esc(o)}" value="${esc(W[k+'|'+o])}" aria-label="${esc(l)} ${esc(o)} points"></label>`).join('')}</fieldset>`).join('')}</div>
+      <div class="actions"><button class="btn" type="button" id="btnClearW">Clear weights</button></div>
+    </details>`;
+  updGcapsRows();
+}
+function updGcapsRows(){
+  const sel=gcapsSel(), el=$('#gRows'); if(!el) return;
+  el.innerHTML = GDOM.map(([k,l])=>{ const o=sel[k]; const w=o!=null?W[k+'|'+o]:undefined; return `<tr><td>${esc(l)}</td><td>${o==null?'<span class="status">not recorded</span>':esc(o)}</td><td class="n">${o==null?'–':(w===undefined||w==='')?'<span class="status">no weight</span>':esc(w)}</td></tr>`; }).join('');
+}
+
+/* ---------- helpers ---------- */
+function num(x){ if(x===undefined||x===null||x==='') return null; const n=+x; return isNaN(n)?null:n; }
+function ageNow(){ const a=num(val('age')); return a; }
+function parseDT(s){ if(!s) return null; const t=Date.parse(s.length===10?s+'T12:00':s); return isNaN(t)?null:t; }
+function fmtDT(s){ const t=parseDT(s); if(t==null) return '—'; const d=new Date(t); return d.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:s.length>10?'2-digit':undefined,minute:s.length>10?'2-digit':undefined}); }
+function fmtD(t){ return new Date(t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function hrs(a,b){ return (b-a)/36e5; }
+
+/* ---------- derived values ---------- */
+function deriveAuto(){
+  // age from DOB
+  // taper start
+  if(S.src.taper_start!=='user'){ const p=val('pred_dose'); const t=p==='40 mg'?40:p==='60 mg'?60:num(val('pred_other')); if(t!=null) setAuto('taper_start',t); }
+  // US result suggestion
+  if(S.src.us_result!=='user' && S.src.us_result!=='ai'){ const r=usSuggest(); if(r) setAuto('us_result',r.result); if(r && r.sites && S.src.us_sites!=='user') setAuto('us_sites',r.sites); }
+}
+function setAuto(id,v){ if(S.v[id]===v && S.src[id]==='auto') return; S.v[id]=v; S.src[id]='auto'; syncField(id); }
+function usSuggest(){
+  const pos=[], ax=[]; let anyImg=false, allImg=true, borderline=false;
+  SEGS.forEach(([k,sd,name,cut,og,temp])=>{
+    const img=val(k+'_img'), halo=val(k+'_halo'), comp=val(k+'_comp'), imt=num(val(k+'_imt'));
+    if(img===true||has(halo)||imt!=null) anyImg=true; if(img===false) allImg=false; if(img==null&&!has(halo)) allImg=false;
+    const thick = imt!=null && imt>=cut;
+    if(temp && (halo===true && comp!==false)) pos.push(`${sd.toLowerCase()} ${name.toLowerCase()}`);
+    if(!temp && (halo===true || thick)) { if(halo===true&&thick) ax.push(`${sd.toLowerCase()} axillary`); else borderline=true; }
+    if(temp && halo!==true && thick) borderline=true;
+  });
+  if(!anyImg) return null;
+  const h=usHours();
+  if(pos.length) return {result:'Positive',sites:pos.concat(ax).join(', ')};
+  if(ax.length) return {result:'LV-GCA pattern',sites:ax.join(', ')};
+  if(borderline || (h!=null&&h>72) || val('us_quality')==='Limited' || !allImg) return {result:'Equivocal'};
+  return {result:'Negative'};
+}
+function usHours(){ const s=parseDT(val('steroid_dt')), u=parseDT(val('us_dt')); return s&&u?hrs(s,u):null; }
+function ogus(){
+  let sum=0,n=0; SEGS.forEach(([k,,, ,og])=>{ const imt=num(val(k+'_imt')); if(imt!=null){ sum+=imt/og; n++; } });
+  return n?{v:sum/n,n}:null;
+}
+function acr(){
+  const items=[]; const a=ageNow();
+  const add=(c,p,l)=>{ if(c) items.push([l,p]); };
+  add(val('tab_result')==='Positive' || SEGS.some(([k,,,,,t])=>t&&val(k+'_halo')===true),5,'Positive TAB or temporal halo');
+  add((num(val('esr'))??0)>=50 || (num(val('crp'))??0)>=10,3,'ESR ≥50 or CRP ≥10');
+  add(val('visual')==='Permanent loss'||val('visual')==='Transient loss / blurring',3,'Sudden visual loss');
+  add(val('pmr')===true,2,'Shoulder/neck morning stiffness'); add(val('jaw')===true,2,'Jaw or tongue claudication');
+  add(val('headache')==='New temporal',2,'New temporal headache'); add(val('scalp')===true,2,'Scalp tenderness');
+  add(val('ta_exam')&&val('ta_exam')!=='Normal',2,'Abnormal temporal artery exam');
+  const axL=val('l_ax_halo')===true||(num(val('l_ax_imt'))??0)>=1.0, axR=val('r_ax_halo')===true||(num(val('r_ax_imt'))??0)>=1.0;
+  add(axL&&axR,2,'Bilateral axillary involvement'); add(val('pet_aorta')===true,2,'PET-CT activity throughout aorta');
+  return {total:items.reduce((s,i)=>s+i[1],0),items,entry:a==null?null:a>=50};
+}
+function redFlags(){
+  const r=[]; const v=val('visual');
+  if(v&&v!=='None') r.push(`Visual symptoms (${v.toLowerCase()}): prednisolone 60 mg now and same-day ophthalmology`);
+  if(val('visual_signs')===true) r.push('Visual signs on examination: same-day ophthalmology');
+  if(val('stroke')===true) r.push('Stroke / TIA symptoms: same-day medical / stroke assessment');
+  if(val('limb_claud')===true||['Bruit','Loss of pulse','Thickening'].includes(val('extracranial'))||(num(val('arm_bp'))??0)>10) r.push('Large-vessel features: phone the rheumatology registrar');
+  const a=ageNow(); if(a!=null&&a<50) r.push('Age under 50: discuss with the rheumatology registrar before steroids');
+  if(val('alt_dx')===true) r.push('Alternative diagnosis more likely: discuss before committing to steroids');
+  return r;
+}
+function doseAdvice(){
+  const v=val('visual'), wt=num(val('weight'));
+  let d, why;
+  if((v&&v!=='None')||val('visual_signs')===true){ d='Prednisolone 60 mg now; consider IV methylprednisolone 500 mg–1 g daily for up to 3 days'; why='visual involvement'; }
+  else if(val('jaw')===true||val('stroke')===true||val('limb_claud')===true){ d='Prednisolone 60 mg once daily'; why='ischaemic features'; }
+  else { d='Prednisolone 40 mg once daily'; why='no visual or ischaemic features recorded'; }
+  const cap = wt? ` Weight-based ceiling: ${Math.min(60,Math.round(wt))} mg (1 mg/kg, max 60).`:'';
+  return {d,why,cap};
+}
+function nextStep(){
+  const g=gcapsCalc(), b=band(g.total), u=val('us_result'), t=val('tab_result');
+  if(val('decision')==='GCA confirmed') return 'GCA confirmed: continue treatment and taper (Part F); issue passport (Part G).';
+  if(t==='Positive') return 'TAB positive: GCA confirmed. Record the decision in Part E.';
+  if(t==='Negative'&&b==='High') return 'TAB negative with high probability: MDT decision; consider PET-CT; do not stop steroids abruptly.';
+  if(!b) return 'Record a GCAPS total (Part A) to read the result against pretest probability.';
+  if(!u) return b==='Low' ? 'Low probability: look for another diagnosis; ultrasound only if doubt remains.' : `${b} probability: temporal + axillary ultrasound within 72 h of the first steroid dose.`;
+  const M = MATRIX[b][u==='LV-GCA pattern'?'Positive':u]; if(!M) return '';
+  if(M==='GCA confirmed') return `Positive ultrasound with ${b.toLowerCase()} probability: GCA confirmed, no biopsy needed. Record the decision in Part E, then plan Parts F and G.`;
+  return `${b} probability, ultrasound ${u.toLowerCase()}: ${M}.`;
+}
+const MATRIX = {
+  Low:{Positive:'Check for mimics (atherosclerosis, amyloid, other vasculitis); confirm with TAB',Negative:'GCA excluded; stop steroids',Equivocal:'Consider an alternative diagnosis; TAB if doubt remains'},
+  Intermediate:{Positive:'GCA confirmed',Negative:'GCA unlikely; wean steroids quickly; review in 2–4 weeks',Equivocal:'TAB or PET-CT'},
+  High:{Positive:'GCA confirmed',Negative:'TAB within 14 days (PET-CT if large-vessel features)',Equivocal:'TAB or PET-CT'}};
+
+/* ---------- recompute ---------- */
+function recompute(){
+  deriveAuto();
+  const ag=val('age'), sx=val('sex'); $('#ptname').textContent = (ag||sx) ? [ag?ag+' y':'',sx||''].filter(Boolean).join(' · ') : 'New assessment';
+  renderRail();
+  if(MOD==='pmr'){ recomputePMR(); return; }
+  renderPanel(); updGcapsRows();
+  // OGUS cells
+  SEGS.forEach(([k,,, ,og])=>{ const el=$('#og_'+k); if(!el) return; const imt=num(val(k+'_imt')); el.textContent = imt==null?'–':(imt/og).toFixed(2); el.className='n'+(imt!=null&&imt/og>=1?' over':''); });
+  const o=ogus(), h=usHours(); const ol=$('#ogusLine');
+  if(ol) ol.innerHTML = `OGUS ${o?`<b class="${o.v>=1?'over':''}">${o.v.toFixed(2)}</b> across ${o.n} segment${o.n>1?'s':''} (≥1.0 suggests wall inflammation)`:'not yet calculable'} · Scan done ${h==null?'— h':`<b class="${h>72?'over':''}">${Math.round(h)} h</b>`} after first steroid dose. OGUS uses rounded reference IMTs (0.4 / 0.3 / 0.3 / 1.0 mm); confirm against Dejaco et al. 2023 before local use.`;
+  const da=doseAdvice(); const de=$('#doseAdvice'); if(de) de.innerHTML = `Suggested start: <b>${da.d}</b> (${da.why}).${da.cap} Give the first dose today. Fast-track ultrasound and biopsy are designed for patients who are already on steroids.`;
+  const tn=$('#tabNote'); if(tn){ const s=parseDT(val('steroid_dt')), t=parseDT(val('tab_dt')); const days=s&&t?Math.floor((t-s)/864e5):null; const len=num(val('tab_len'));
+    tn.innerHTML = [days!=null?`Biopsy ${days} days after first steroid dose ${days>14?'<b class="over">(over 14 days: lower yield)</b>':'(within 14 days)'}`:'', len!=null?`Specimen ${len} cm ${len<1?'<b class="over">(under 1 cm: inadequate)</b>':'(adequate)'}`:''].filter(Boolean).join(' · '); }
+  renderMatrix(); $('#usReport') && ($('#usReport').textContent = usReport());
+  $('#summary') && ($('#summary').textContent = buildSummary());
+  $('#passportOut') && ($('#passportOut').textContent = passportText());
+  renderTaper();
+}
+function renderRail(){
+  const SS=MOD==='pmr'?P_SECTIONS:SECTIONS, SF=MOD==='pmr'?P_SECFIELDS:SECFIELDS;
+  const list=SS.concat([{id:'scores',code:'S',short:'Scores'}]);
+  $('#rail').innerHTML = list.map(s=>{ const ids=SF[s.id]; const n=ids?ids.filter(i=>has(S.v[i])).length:0; const c = ids? `<span class="cnt">${n}/${ids.length}</span>`:'';
+    const ct=document.querySelector(`[data-ct="${s.id}"]`); if(ct){ ct.textContent = ids?`${n}/${ids.length}`:''; ct.classList.toggle('done',!!ids&&n===ids.length); }
+    return `<a class="chip" href="#sec-${s.id}" data-sec="${s.id}"><span class="code">${s.code}</span>${s.short}${c}</a>`; }).join('')
+    + `<button class="chip ghost" type="button" data-all="open">Expand all</button><button class="chip ghost" type="button" data-all="close">Collapse all</button>`;
+  updateSubCounts();
+}
+/* ---------- collapsible sections ---------- */
+const OPEN={gca:new Set(['intake']), pmr:new Set(['intake'])};
+function scoresSection(){ return `<section class="card scores" id="sec-scores"><div class="sh"><span class="code">S</span><h2>Scores & next step</h2></div><p class="lead">Calculated live from everything entered above. Red flags also show under the section bar at the top.</p><div id="panel" aria-live="polite"></div></section>`; }
+const INFO=new Map(); let infoN=0;
+function infoBtn(title, html, label='Info'){ const k='i'+(++infoN); INFO.set(k,{t:title,h:html}); return `<button type="button" class="infolink icb" data-info="${k}" aria-label="${esc(label)}: ${esc(title)}">?</button>`; }
+let popReturn=null;
+function openPop(title, html){ const pw=$('#pop'); $('#popT').textContent=title; $('#popB').innerHTML=html; popReturn=document.activeElement; pw.hidden=false; $('#popX').focus(); }
+function closePop(){ const pw=$('#pop'); if(pw.hidden) return; pw.hidden=true; if(popReturn&&popReturn.focus) popReturn.focus(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePop(); });
+function collapsify(){
+  document.querySelectorAll('#main section.card').forEach(sec=>{
+    const sh=sec.querySelector('.sh'); if(!sh||sec.querySelector('.sectoggle')) return;
+    const key=sec.id.replace('sec-',''); const open=OPEN[MOD].has(key);
+    const body=document.createElement('div'); body.className='secbody'; body.id=sec.id+'-body';
+    while(sh.nextSibling) body.appendChild(sh.nextSibling);
+    sec.appendChild(body); body.hidden=!open;
+    const btn=document.createElement('button'); btn.type='button'; btn.className='sectoggle'; btn.setAttribute('aria-expanded',String(open)); btn.setAttribute('aria-controls',body.id); btn.dataset.toggle=key;
+    while(sh.firstChild){ const c=sh.firstChild; if(c.nodeType===1&&c.tagName==='H2'){ const t=document.createElement('span'); t.className='h2t'; t.innerHTML=c.innerHTML; btn.appendChild(t); sh.removeChild(c); } else btn.appendChild(c); }
+    const ct=document.createElement('span'); ct.className='secct'; ct.dataset.ct=key; btn.appendChild(ct);
+    const ch=document.createElement('span'); ch.className='chev'; ch.setAttribute('aria-hidden','true');  btn.appendChild(ch);
+    const hd=document.createElement('h2'); hd.className='sechead'; hd.appendChild(btn); sh.appendChild(hd);
+    let cur=null, idx=0;
+    [...body.childNodes].forEach(n=>{
+      if(n.nodeType===1&&n.tagName==='H3'){
+        const skey=key+'-'+idx, so=subOpen(skey,idx);
+        const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.sub=skey;
+        const sb=document.createElement('div'); sb.className='subbody'; sb.id=sec.id+'-sub'+idx; sb.hidden=!so;
+        const h=document.createElement('h3'); h.className='subhead';
+        const raw=n.textContent.trim(); let ttl=raw, tip=''; let mm=raw.match(/^(.*?):\s+(.+)$/)||raw.match(/^(.*?)\s+\((.+)\)$/); if(mm){ ttl=mm[1]; tip=mm[2]; }
+        
+        h.innerHTML=`<button type="button" class="subtoggle" aria-expanded="${so}" aria-controls="${sb.id}"><span class="subt">${esc(ttl)}</span><span class="secct" data-subct="${skey}"></span><span class="chev" aria-hidden="true"></span></button>${tip?infoBtn(ttl, `<p>${esc(tip.charAt(0).toUpperCase()+tip.slice(1))}.</p>`):''}`;
+        wrap.appendChild(h); wrap.appendChild(sb); body.insertBefore(wrap,n); body.removeChild(n); cur=sb; idx++;
+      } else if(cur){ cur.appendChild(n); }
+    });
+    const title=btn.querySelector('.h2t')?.textContent||'';
+    body.querySelectorAll('p.lead').forEach(pl=>{
+      if(pl.querySelector('#doseAdvice,#pDoseAdvice')) return;
+      let html=`<p>${pl.innerHTML}</p>`;
+      if(key==='intake') html+='<p>Photos: cover or crop out names, dates of birth and NHS numbers before adding them. Supported formats: JPEG, PNG, WebP.</p>';
+      const ib=infoBtn(title, html, key==='intake'?'What to enter':'About this section');
+      const anchor = key==='intake' ? body.querySelector('.fld.wide') : null;
+      if(anchor){ const holder=document.createElement('div'); holder.className='infobar'; holder.innerHTML=ib; anchor.after(holder); pl.remove(); }
+      else if(!pl.closest('.sub') && !sec.querySelector('.sechead .icb')){ sec.querySelector('.sechead').insertAdjacentHTML('beforeend', ib); pl.remove(); }
+      else { const holder=document.createElement('div'); holder.className='infobar'; holder.innerHTML=ib; pl.replaceWith(holder); }
+    });
+  });
+  const secs=[...document.querySelectorAll('#main section.card')];
+  secs.forEach((sec,i)=>{ const nx=secs[i+1]; const body=sec.querySelector('.secbody'); if(!nx||!body||body.querySelector('.secnav')) return;
+    const c=nx.querySelector('.sectoggle .code')?.textContent||'', t=nx.querySelector('.h2t')?.textContent||'';
+    const dv=document.createElement('div'); dv.className='secnav'; dv.innerHTML=`<button type="button" class="btn" data-next="${nx.id}">Next: ${esc(c)} ${esc(t)} →</button>`; body.appendChild(dv); });
+}
+const SUBSTATE={gca:new Map(),pmr:new Map()};
+function subOpen(k,i){ const m=SUBSTATE[MOD]; if(!m.has(k)) m.set(k,i===0); return m.get(k); }
+function openSub(w,open){ if(!w) return; const b=w.querySelector('.subtoggle'), sb=w.querySelector('.subbody'); b.setAttribute('aria-expanded',String(open)); sb.hidden=!open; SUBSTATE[MOD].set(w.dataset.sub,open); }
+function focusSec(sec){ if(!sec) return; document.querySelectorAll('#main section.card').forEach(sc=>openSec(sc, sc===sec)); }
+function focusSub(w){ if(!w) return; w.parentElement.querySelectorAll(':scope > .sub').forEach(x=>openSub(x, x===w)); }
+function goTo(el){ if(!el) return; const sec=el.closest('section.card'); focusSec(sec); const w=el.closest('.sub'); if(w) focusSub(w);
+  requestAnimationFrame(()=>el.scrollIntoView({behavior:'smooth',block:'start'})); }
+function reveal(el){ if(!el) return; openSec(el.closest('section.card'),true); openSub(el.closest('.sub'),true); }
+function updateSubCounts(){ document.querySelectorAll('#main .sub').forEach(w=>{ const ids=new Set([...w.querySelectorAll('[data-f]')].map(e=>e.dataset.f)); const el=w.querySelector('[data-subct]'); if(!el) return; const n=[...ids].filter(i=>has(S.v[i])).length; el.textContent=ids.size?`${n}/${ids.size}`:''; el.classList.toggle('done',!!ids.size&&n===ids.size); }); }
+function openSec(sec, open){ if(!sec) return; const btn=sec.querySelector('.sectoggle'), body=sec.querySelector('.secbody'); if(!btn||!body) return;
+  btn.setAttribute('aria-expanded',String(open)); body.hidden=!open; const key=sec.id.replace('sec-',''); open?OPEN[MOD].add(key):OPEN[MOD].delete(key); }
+function setAlertStrip(items){ const el=$('#alertStrip'); if(!el) return; if(!items.length){ el.hidden=true; el.innerHTML=''; return; }
+  el.hidden=false; el.innerHTML=`<span>Red flag: ${esc(items.join(' · '))}</span><button type="button" data-goto="sec-scores">See scores</button>${MOD==='pmr'&&pGcaFlags().length?'<button type="button" data-switch="gca">Open GCA tab</button>':''}`; }
+function renderPanel(){
+  const rf=redFlags(), ac=acr(), g=gcapsCalc(), b=band(g.total), o=ogus();
+  setAlertStrip(rf.map(r=>r.split(':')[0]));
+  const s=parseDT(val('steroid_dt')); const now=Date.now();
+  const h = s? hrs(s, parseDT(val('us_dt'))||now):null;
+  const dTab = s? ((parseDT(val('tab_dt'))||now)-s)/864e5:null;
+  const usDone=!!val('us_dt'), tabDone=!!val('tab_dt');
+  const usPct = h==null?0:Math.min(100,h/72*100), tabPct=dTab==null?0:Math.min(100,dTab/14*100);
+  const cls=p=>p>=100?'alert':p>=66?'warn':'';
+  const da=doseAdvice();
+  $('#panel').innerHTML = `
+    ${rf.length?`<div class="pcard redflags"><h4>Red flags</h4><ul>${rf.map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>`:''}
+    <div class="pcard next"><h4>Suggested next step</h4><p>${esc(nextStep())}</p></div>
+    <div class="pcard"><h4>Southend GCAPS <span>${g.mode==='calc'?'live':g.mode==='manual'?'manual total':''}</span></h4>
+      <div class="big">${g.total!=null?g.total:'–'}</div>
+      ${b?`<span class="pill ${b==='High'?'alert':b==='Intermediate'?'warn':'good'}">${b} probability</span>`:`<span class="pill neutral">${g.answered}/13 domains recorded</span>`}
+      <ul class="plist"><li>Domains recorded <b>${g.answered}/13</b></li><li>Weights set <b>${g.configured||g.mode==='calc'?'yes':'no'}</b></li></ul></div>
+    <div class="pcard"><h4>ACR/EULAR 2022 classification</h4>
+      <div class="big">${ac.total}<small> pts</small></div>
+      <span class="pill ${ac.entry===false?'alert':ac.total>=6&&ac.entry?'good':'neutral'}">${ac.entry===false?'Entry criterion not met (age <50)':ac.total>=6?(ac.entry?'≥6: meets classification':'≥6 pts, age not recorded'):`${6-ac.total} more to reach 6`}</span>
+      <ul class="plist">${ac.items.map(([l,p])=>`<li>${esc(l)} <b>+${p}</b></li>`).join('')||'<li>No criteria met yet</li>'}</ul></div>
+    <div class="pcard"><h4>Steroid clock</h4>
+      ${s?`<div class="clock"><div><div class="big" style="font-size:22px">${Math.round(h)}<small> h</small></div><div class="status">${usDone?'at ultrasound':'on steroids now'}</div><div class="bar"><i class="${cls(usPct)}" style="width:${usPct}%"></i></div><div class="status">US window 72 h${!usDone&&h<72?` · ${Math.round(72-h)} h left`:''}</div></div>
+      <div><div class="big" style="font-size:22px">${Math.floor(dTab)}<small> d</small></div><div class="status">${tabDone?'at biopsy':'on steroids now'}</div><div class="bar"><i class="${cls(tabPct)}" style="width:${tabPct}%"></i></div><div class="status">TAB window 14 d${!tabDone&&dTab<14?` · ${Math.ceil(14-dTab)} d left`:''}</div></div></div>`:'<p class="status" style="margin:0">Enter the first steroid dose time in Part A to start the ultrasound and biopsy clocks.</p>'}</div>
+    <div class="pcard dose"><h4>Ultrasound</h4>
+      <ul class="plist"><li>Result <b>${esc(val('us_result')||'–')}</b></li><li>OGUS <b class="${o&&o.v>=1?'over':''}">${o?o.v.toFixed(2):'–'}</b></li><li>Halo segments <b>${SEGS.filter(([k])=>val(k+'_halo')===true).length}</b></li></ul></div>
+    <div class="pcard dose"><h4>Starting dose</h4><p style="margin:0;font-size:14px">${esc(da.d)}</p><p class="status" style="margin:4px 0 0">${esc(da.why)}${esc(da.cap)}</p></div>`;
+}
+function renderMatrix(){
+  const g=gcapsCalc(), b=band(g.total); let u=val('us_result'); if(u==='LV-GCA pattern') u='Positive';
+  const cols=['Positive','Negative','Equivocal'];
+  $('#matrix').innerHTML = `<table class="mx"><thead><tr><th>GCAPS</th>${cols.map(c=>`<th>US ${c.toLowerCase()}</th>`).join('')}</tr></thead><tbody>${['Low','Intermediate','High'].map(r=>`<tr><th>${r}${r==='Low'?' (&lt;9)':r==='High'?' (&gt;12)':' (9–12)'}</th>${cols.map(c=>`<td class="${r===b&&c===u?'hit':''}">${MATRIX[r][c]}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+function renderTaper(){
+  const el=$('#taper'); if(!el) return; const S0=num(val('taper_start')); const st=parseDT(val('steroid_dt'))||Date.now();
+  if(S0==null){ el.innerHTML='<p class="status" style="padding:10px;margin:0">Choose a starting dose in Part A to generate the taper.</p>'; return; }
+  const steps=[]; let w=0, dose=S0;
+  steps.push([dose,2,'Induction']); w=2;
+  while(dose-10>=20){ dose-=10; steps.push([dose,2,'Fast taper']); }
+  if(dose>20){ dose=20; steps.push([dose,2,'Fast taper']); }
+  [17.5,15,12.5,10].forEach(x=>{ if(x<dose){ dose=x; steps.push([x,3,'Middle taper']); } });
+  for(let x=9;x>=1;x--){ steps.push([x,5,'Slow taper']); }
+  steps.push([0,0,'Stop (check morning cortisol if symptomatic)']);
+  if(val('sparing')==='Tocilizumab'){ el.innerHTML=`<p class="status" style="padding:10px;margin:0">On tocilizumab: use the faster GiACTA-style taper to 0 mg by about week 26. Write the agreed schedule in the steroid diary.</p>`; return; }
+  let t=st; const rows=steps.map(([d,wk,ph])=>{ const r=`<tr><td class="n">${fmtD(t)}</td><td class="n">${d} mg</td><td>${wk?wk+' weeks':'—'}</td><td>${ph}</td></tr>`; t+=wk*7*864e5; return r; }).join('');
+  el.innerHTML=`<table class="taper"><thead><tr><th>From</th><th>Daily dose</th><th>For</th><th>Phase</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------- text outputs ---------- */
+function L(id){ const v=S.v[id]; if(!has(v)) return '—'; if(v===true) return 'Yes'; if(v===false) return 'No'; if(Array.isArray(v)) return v.join(', '); if(F[id].type==='dt'||F[id].type==='date') return fmtDT(v); return String(v); }
+function usReport(){
+  const h=usHours(), r=val('us_result'), o=ogus();
+  const segs=SEGS.filter(([k])=>val(k+'_halo')===true).map(([k,sd,n])=>`${sd.toLowerCase()} ${n.toLowerCase()}${has(val(k+'_imt'))?` (IMT ${val(k+'_imt')} mm)`:''}`);
+  const ax=`axillary IMT R ${L('r_ax_imt')} / L ${L('l_ax_imt')} mm`;
+  const head=`Doppler ultrasound of both superficial temporal arteries (common, frontal, parietal) and both axillary arteries, performed ${h==null?'__':Math.round(h)} h after starting ${L('pred_dose')} prednisolone. Scan quality: ${L('us_quality')}.`;
+  if(!r) return head+'\n\nComplete the findings table to generate the report.';
+  if(r==='Positive') return `${head}\nThere is a non-compressible halo in the ${segs.join(', ')||'[segments]'}. ${ax}. OGUS ${o?o.v.toFixed(2):'__'}.\nAppearances are consistent with giant cell arteritis${val('r_ax_halo')||val('l_ax_halo')?' (cranial and large-vessel)':' (cranial)'}. Biopsy is not required if clinical probability is intermediate or high.`;
+  if(r==='LV-GCA pattern') return `${head}\nTemporal arteries are compressible with no halo. Axillary involvement: ${ax}. OGUS ${o?o.v.toFixed(2):'__'}.\nAppearances suggest large-vessel GCA. Consider PET-CT.`;
+  if(r==='Negative') return `${head}\nAll six temporal segments and both axillary arteries were visualised; all were compressible with no halo. ${ax}. OGUS ${o?o.v.toFixed(2):'__'}.\nNo sonographic evidence of GCA. If clinical suspicion remains high, consider TAB within 14 days of starting steroids.`;
+  return `${head}\nFindings: ${segs.length?'halo in '+segs.join(', '):'no definite halo'}; ${ax}. ${h!=null&&h>72?'Scan performed more than 72 h after steroids. ':''}${val('athero')?'Atherosclerosis may confound IMT. ':''}${L('us_comment')!=='—'?L('us_comment'):''}\nAppearances are not diagnostic. Recommend clinical review and TAB or PET-CT according to pretest probability.`;
+}
+function buildSummary(){
+  const g=gcapsCalc(), ac=acr(), rf=redFlags(), o=ogus(), h=usHours();
+  const pos=[['headache','New headache'],['scalp','Scalp tenderness'],['jaw','Jaw/tongue claudication'],['visual','Visual symptoms'],['visual_signs','Visual signs'],['ta_exam','Temporal artery'],['pmr','PMR symptoms'],['constitutional','Constitutional'],['extracranial','Extracranial arteries'],['limb_claud','Limb claudication'],['stroke','Stroke/TIA'],['cn_palsy','Cranial nerve palsy'],['alt_dx','Alternative diagnosis more likely']]
+    .filter(([id])=>has(val(id))).map(([id,l])=>`  - ${l}: ${L(id)}`).join('\n');
+  return [
+`GCA FAST-TRACK ASSESSMENT${isExample?'  [EXAMPLE – FICTIONAL PATIENT]':''}
+Patient: age ${L('age')} | ${L('sex')} | weight ${L('weight')} kg (no identifiers recorded)
+Referrer: ${L('referrer')} | Referred ${L('ref_dt')}
+Comorbidities: ${L('comorb')} | Anticoagulation: ${L('anticoag')}`,
+`RED FLAGS
+${rf.length?rf.map(r=>'  ! '+r).join('\n'):'  None recorded'}`,
+`PRESENTATION (onset ${L('onset')})
+${pos||'  —'}${has(val('alt_dx_text'))?'\n  Notes: '+val('alt_dx_text'):''}`,
+`BLOODS (${L('bloods_dt')})
+  CRP ${L('crp')} mg/L | ESR ${L('esr')} mm/h | PV ${L('pv')} | Plt ${L('plt')} | Hb ${L('hb')} | eGFR ${L('egfr')} | ALT ${L('alt')} | Glucose ${L('glucose')} | HbA1c ${L('hba1c')}`,
+`SCORES
+  Southend GCAPS: ${g.total!=null?g.total+' ('+band(g.total)+' probability, '+(g.mode==='calc'?'calculated':'manual entry')+')':'not recorded'} – ${g.answered}/13 domains recorded
+  ACR/EULAR 2022: ${ac.total} points${ac.entry===false?' – entry criterion (age ≥50) NOT met':ac.total>=6?' – meets classification (≥6)':''}${ac.items.length?'\n    '+ac.items.map(([l,p])=>`${l} +${p}`).join('; '):''}`,
+`STEROIDS
+  ${L('pred_dose')}${val('pred_dose')==='Other'?' ('+L('pred_other')+' mg)':''} – first dose ${L('steroid_dt')}${val('ivmp')?` | IV methylprednisolone ${L('ivmp_dose')} mg`:''}
+  PPI ${val('ppi')?'yes':'no'} | Calcium/vit D ${val('cad')?'yes':'no'} | Passport ${val('passport')?'given':'not yet'}`,
+`ULTRASOUND (${L('us_dt')}${h!=null?', '+Math.round(h)+' h after steroids':''})
+  Result: ${L('us_result')}${has(val('us_sites'))?' – '+val('us_sites'):''} | OGUS ${o?o.v.toFixed(2):'—'} | Quality ${L('us_quality')}${val('pet_done')?`\n  PET-CT: aorta ${L('pet_aorta')}, large-vessel ${L('pet_lv')}`:''}`,
+`BIOPSY
+  ${has(val('tab_dt'))?`${L('tab_side')} TAB ${L('tab_dt')} – length ${L('tab_len')} cm – result ${L('tab_result')}`:has(val('tab_indication'))?'Requested: '+L('tab_indication'):'Not requested'}`,
+`DECISION
+  Suggested next step: ${nextStep()}
+  Diagnosis: ${L('decision')}${has(val('dx_basis'))?' (by '+L('dx_basis')+')':''}${has(val('dx_type'))?' – '+L('dx_type'):''}${has(val('alt_final'))?'\n  Working diagnosis: '+val('alt_final'):''}
+  Consultant: ${L('consultant')} | Date: ${L('dx_date')}${has(val('plan'))?'\n  Plan: '+val('plan'):''}`,
+`FOLLOW-UP
+  Steroid-sparing: ${L('sparing')} | Next review: ${L('next_review')}
+  Safety bundle: ${['f_dexa','f_bis','f_pjp','f_vacc','f_bp','f_sick'].filter(i=>val(i)).length}/6 done | Passport checklist: ${['g1','g2','g3','g4','g5','g6','g7','g8','g9','g10'].filter(i=>val(i)).length}/10${has(val('extra_notes'))?'\n  Other: '+val('extra_notes'):''}`
+  ].join('\n\n');
+}
+function passportText(){
+  return `GIANT CELL ARTERITIS PASSPORT
+[Affix patient label here]
+Diagnosis: ${val('decision')==='GCA confirmed'?'GCA'+(has(val('dx_type'))?' – '+L('dx_type'):''):L('decision')}   Date: ${L('dx_date')}   Age at diagnosis: ${L('age')}
+Confirmed by: ${L('dx_basis')}
+At diagnosis: CRP ${L('crp')}  ESR ${L('esr')}  PV ${L('pv')}  Platelets ${L('plt')}
+Consultant: ${L('consultant')}
+Starting prednisolone: ${L('taper_start')} mg from ${L('steroid_dt')}
+Other medicines: PPI ${val('ppi')?'✓':'–'}  Calcium/vit D ${val('cad')?'✓':'–'}  Bone protection ${val('f_bis')?'✓':'–'}  Steroid-sparing: ${L('sparing')}
+
+My symptoms at the start:
+  Vision problems ${L('visual')} | Jaw pain on chewing ${L('jaw')} | Scalp tenderness ${L('scalp')}
+  Headache ${L('headache')} | Shoulder/hip stiffness ${L('pmr')} | Fevers/sweats/weight loss ${L('constitutional')}
+
+ANY CHANGE IN VISION: CALL 999 OR GO TO A&E NOW. Never stop steroids suddenly.`;
+}
+
+/* ---------- events ---------- */
+function setVal(id, v, src='user'){
+  if(!F[id]) return; S.v[id]=v; S.src[id]= has(v)?src:undefined; if(!has(v)) delete S.v[id];
+  syncField(id); recompute();
+}
+function syncField(id){
+  const f=F[id]; if(!f) return;
+  const badge=document.querySelector(`[data-badge="${id}"]`); if(badge) badge.innerHTML=srcTag(id);
+  const wrap=document.querySelector(`[data-wrap="${id}"]`);
+  if(wrap){ wrap.classList.toggle('src-ai',S.src[id]==='ai'); wrap.classList.toggle('src-auto',S.src[id]==='auto'); wrap.classList.toggle('src-pt',S.src[id]==='pt'); }
+  if(f.seg){ // table cells
+    const inp=document.getElementById('in_'+id);
+    if(f.type==='num'){ if(inp&&document.activeElement!==inp) inp.value=S.v[id]??''; if(inp) inp.closest('td').classList.toggle('src-ai',S.src[id]==='ai'); }
+    else document.querySelectorAll(`.mini button[data-f="${id}"]`).forEach(b=>{ const on=String(S.v[id])===b.dataset.v; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); b.closest('td').classList.toggle('src-ai',S.src[id]==='ai'); });
+    return;
+  }
+  if(f.type==='check'){ const i=document.getElementById('in_'+id); if(i) i.checked=!!S.v[id]; return; }
+  if(['yn','choice','multi'].includes(f.type)){ const c=document.querySelector(`[data-ctl="${id}"]`); if(c) c.innerHTML=control(f); return; }
+  const inp=document.getElementById('in_'+id); if(inp && document.activeElement!==inp) inp.value=S.v[id]??'';
+}
+document.addEventListener('click', e=>{
+  const il=e.target.closest('.infolink'); if(il){ if(il.dataset.ev){ const f=F[il.dataset.ev]; openPop('Evidence: '+f.label, '<ul class="evl">'+EVID[MOD][il.dataset.ev].map(x=>{ const i=x.indexOf(':'); return `<li><b>${esc(x.slice(0,i))}</b>${esc(x.slice(i))}</li>`; }).join('')+'</ul>'); return; } if(il.dataset.info){ const x=INFO.get(il.dataset.info); if(x) openPop(x.t,x.h); } else openPop(il.dataset.title||'Info', `<p>${esc(il.dataset.tipt||'')}</p>`); return; }
+  if(e.target.id==='pop'||e.target.closest('#popX')){ closePop(); return; }
+  const mt=e.target.closest('[data-mod]'); if(mt){ switchMod(mt.dataset.mod); return; }
+  const sw=e.target.closest('[data-switch]'); if(sw){ switchMod(sw.dataset.switch); return; }
+  const tg=e.target.closest('.sectoggle'); if(tg){ const sec=tg.closest('section.card'); if(tg.getAttribute('aria-expanded')==='true') openSec(sec,false); else goTo(sec); return; }
+  const al=e.target.closest('[data-all]'); if(al){ const o=al.dataset.all==='open'; document.querySelectorAll('#main section.card').forEach(sc=>openSec(sc,o)); document.querySelectorAll('#main .sub').forEach(w=>openSub(w,o)); return; }
+  const stg=e.target.closest('.subtoggle'); if(stg){ const w=stg.closest('.sub'); if(stg.getAttribute('aria-expanded')==='true') openSub(w,false); else { focusSub(w); requestAnimationFrame(()=>{ const r=w.getBoundingClientRect(); if(r.top<130||r.top>innerHeight*0.6) w.scrollIntoView({behavior:'smooth',block:'start'}); }); } return; }
+  const nb=e.target.closest('[data-next]'); if(nb){ goTo(document.getElementById(nb.dataset.next)); return; }
+  const gt=e.target.closest('[data-goto]'); if(gt){ const t=document.getElementById(gt.dataset.goto); if(t) goTo(t); return; }
+  const an=e.target.closest('a[href^="#"]'); if(an){ const t=document.getElementById(an.getAttribute('href').slice(1)); if(t){ e.preventDefault(); goTo(t); } return; }
+  const b=e.target.closest('button[data-f]');
+  if(b){ const id=b.dataset.f, f=F[id];
+    if(b.dataset.m!==undefined){ const cur=new Set(S.v[id]||[]); cur.has(b.dataset.m)?cur.delete(b.dataset.m):cur.add(b.dataset.m); setVal(id,[...cur]); return; }
+    let v=b.dataset.v; if(f.type==='yn'||f.seg) v = v==='true';
+    setVal(id, S.v[id]===v?undefined:v); return; }
+  const m=e.target.closest('button[data-mic]'); if(m){ dictate(m.dataset.mic,m); return; }
+  const c=e.target.closest('button[data-copy]'); if(c){ copyText($('#'+c.dataset.copy).textContent); return; }
+  if(e.target.id==='btnClearW'){ W={}; try{localStorage.removeItem('gcaps_weights')}catch(_){} renderGcaps(); recompute(); }
+});
+document.addEventListener('input', e=>{
+  const t=e.target;
+  if(t.dataset.w){ W[t.dataset.w]=t.value; try{localStorage.setItem('gcaps_weights',JSON.stringify(W))}catch(_){} recompute(); return; }
+  const id=t.dataset.f; if(!id||!F[id]) return;
+  if(F[id].type==='check'){ setVal(id, t.checked?true:undefined); return; }
+  let v=t.value; if(F[id].type==='num') v = v===''?undefined:v;
+  S.v[id]=v; S.src[id]= has(v)?'user':undefined; if(!has(v)) delete S.v[id];
+  const badge=document.querySelector(`[data-badge="${id}"]`); if(badge) badge.innerHTML=srcTag(id);
+  const wrap=document.querySelector(`[data-wrap="${id}"]`); if(wrap){wrap.classList.remove('src-ai','src-auto');}
+  if(F[id].seg){ const td=t.closest('td'); td&&td.classList.remove('src-ai'); }
+  clearTimeout(window._rc); window._rc=setTimeout(recompute,120);
+});
+document.addEventListener('change', e=>{ const t=e.target; if(t.type==='checkbox'&&t.dataset.f){ setVal(t.dataset.f, t.checked?true:undefined); } });
+
+/* ---------- toast / copy ---------- */
+function toast(msg, ms=5200){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(window._tt); window._tt=setTimeout(()=>t.hidden=true,ms); }
+async function copyText(s){ try{ await navigator.clipboard.writeText(s); toast('Copied to clipboard'); }catch(e){ toast('Copy is blocked here. Select the text and copy it manually.'); } }
+
+/* ---------- dictation ---------- */
+let rec=null, recBtn=null;
+const DICT_HELP='Voice input isn\'t available in this view. Use your device\'s dictation instead: the microphone key on an iPhone or Android keyboard, Windows key + H on Windows, or press Fn twice on a Mac.';
+function dictate(id, btn){
+  if(rec){ try{rec.stop()}catch(_){} return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const ta=document.getElementById('in_'+id);
+  if(!SR){ toast(DICT_HELP,9000); ta&&ta.focus(); return; }
+  try{
+    rec=new SR(); rec.lang='en-GB'; rec.continuous=true; rec.interimResults=false; recBtn=btn;
+    rec.onresult=ev=>{ let txt=''; for(let i=ev.resultIndex;i<ev.results.length;i++) if(ev.results[i].isFinal) txt+=ev.results[i][0].transcript; if(txt){ const cur=S.v[id]||''; setVal(id,(cur?cur.replace(/\s*$/,' '):'')+txt.trim()); } };
+    rec.onerror=ev=>{ toast(DICT_HELP,9000); ta&&ta.focus(); };
+    rec.onend=()=>{ rec=null; if(recBtn){recBtn.classList.remove('live');recBtn.textContent='Dictate';} };
+    rec.start(); btn.classList.add('live'); btn.textContent='Stop';
+  }catch(e){ rec=null; toast(DICT_HELP,9000); ta&&ta.focus(); }
+}
+
+/* ---------- images ---------- */
+let images=[]; let imgOK=false;
+function initImages(){
+  const inp=$('#imgIn'), drop=$('#drop');
+  inp.onchange=()=>{ addImgs(inp.files); inp.value=''; };
+  drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')}; drop.ondragleave=()=>drop.classList.remove('over');
+  drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');addImgs(e.dataTransfer.files)};
+  $('#in_'+intakeId()).addEventListener('paste',e=>{ const fs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/')); if(fs.length){ e.preventDefault(); addImgs(fs);} });
+  drawThumbs();
+  $('#btnExtract').onclick=extract;
+  $('#btnDlMd').onclick=()=>save(`${MOD}-summary-${slug()}.md`, '```\n'+modSummary()+'\n```\n');
+  $('#btnDlJson').onclick=()=>save(`${MOD}-data-${slug()}.json`, JSON.stringify({pathway:MOD,exported:new Date().toISOString(),values:S.v,sources:S.src},null,2));
+  $('#btnAiSum').onclick=aiSummary;
+  updateAIUI();
+}
+function addImgs(list){ [...list].filter(f=>f.type.startsWith('image/')).forEach(f=>images.push({f,url:URL.createObjectURL(f)})); drawThumbs(); }
+function drawThumbs(){ const t=$('#thumbs'); if(!t) return; t.innerHTML=images.map((im,i)=>`<div class="thumb"><img src="${im.url}" alt="Referral image ${i+1}"><button type="button" data-rm="${i}" aria-label="Remove image">×</button></div>`).join('');
+  t.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ URL.revokeObjectURL(images[+b.dataset.rm].url); images.splice(+b.dataset.rm,1); drawThumbs(); }); }
+const slug=()=> new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+
+/* ---------- Claude ---------- */
+let sampleFn=null, downloads=null, ctl=null;
+(async()=>{
+  try{ sampleFn = await window.claude?.use?.('sample'); }catch(_){ sampleFn=null; }
+  try{ downloads = await window.claude?.use?.('downloads'); }catch(_){ downloads=null; }
+  if(sampleFn){ try{ const lim=await sampleFn.limits(); imgOK=!!lim?.images; if(imgOK && $('#imgIn')) $('#imgIn').accept=lim.images.mediaTypes.join(','); }catch(_){ imgOK=false; } }
+  updateAIUI();
+})();
+function updateAIUI(){
+  const ok=!!sampleFn;
+  const bx=$('#btnAiSum'); if(bx) bx.hidden=!ok;
+  const be=$('#btnExtract'); if(be){ be.disabled=false; be.textContent= ok?'Extract and fill the form':'Import questionnaire answers'; }
+  const st=$('#exStatus'); if(st && !ok && !st.textContent) st.textContent='Paste a returned questionnaire email above and press Import. AI reading of letters and photos works when the app is opened in Claude.';
+  const q=$('#btnQ'); if(q) q.onclick=openQ;
+  const note=$('#imgnote'); if(note && ok && !imgOK) note.textContent='Photo reading isn\'t available in this view. Paste or type the text instead.';
+  ['#btnDlMd','#btnDlJson'].forEach(s=>{ const b=$(s); if(b) b.hidden=!downloads; });
+}
+function schemaText(){
+  return ORDER.filter(id=>(F[id].mod===MOD||F[id].mod==='shared')&&!['intake_text','extra_notes','p_intake_text','p_extra_notes'].includes(id)).map(id=>{ const f=F[id];
+    const t = f.type==='yn'?'boolean': f.type==='choice'?'one of: '+f.opts.map(o=>JSON.stringify(o)).join(' | '): f.type==='multi'?'array of: '+f.opts.map(o=>JSON.stringify(o)).join(' | '): f.type==='num'?'number': f.type==='date'?'YYYY-MM-DD': f.type==='dt'?'YYYY-MM-DDTHH:MM': f.type==='check'?'true if done':'string';
+    return `${id} | ${f.label} | ${t}`; }).join('\n');
+}
+function errCopy(e){ return ({not_granted:'Claude access was declined for this page. Fill in the form directly.',sampling_disabled:'Claude isn\'t available for this account.',rate_limited:'Too many requests just now. Try again in a minute.',image_rejected:'One of the photos couldn\'t be read. Try a clearer JPEG or PNG.',images_unavailable:'Photos can\'t be sent from this view. Paste the text instead.',refused:'Claude couldn\'t process this input.',invalid_json:'The reply couldn\'t be read. Try again.',session_expired:'Sign in again to use Claude.',prompt_too_large:'The text is too long. Paste a shorter extract.'})[e?.code] || 'Extraction failed. Try again.'; }
+function redact(t){ return String(t)
+  .replace(/\b(?:DOB|D\.O\.B\.?|date of birth|born)\s*[:\-]?\s*\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}/gi,'[DOB removed]')
+  .replace(/\b(?:patient name|name)\s*[:\-]\s*[^\n,;]+/gi,'[name removed]')
+  .replace(/\b(?:NHS|MRN|CHI|hospital)\s*(?:no\.?|number|#)?\s*[:\-]?\s*[A-Z0-9][A-Z0-9 \-]{5,14}\b/gi,'[number removed]')
+  .replace(/\b\d{3}[ \-]?\d{3}[ \-]?\d{4}\b/g,'[number removed]')
+  .replace(/(?:\+44\s?7\d{3}|\b07\d{3})\s?\d{3}\s?\d{3}\b/g,'[phone removed]')
+  .replace(/\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/g,'[postcode removed]'); }
+/* ---------- pre-clinic questionnaire ---------- */
+const QBASE = /\.github\.io$/.test(location.hostname) ? location.origin+location.pathname.replace(/[^/]*$/,'') : 'https://dos1984.github.io/GCA-PMR-rapid-access/';
+function newRef(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r=new Uint32Array(6); crypto.getRandomValues(r); return [...r].map(x=>a[x%a.length]).join(''); }
+function openQ(){
+  let qt=MOD, ref=newRef(), reply=''; try{ reply=localStorage.getItem('qreply')||''; }catch(_){}
+  openPop('Send a pre-clinic questionnaire', `<p>The patient gets a link to a 5-minute questionnaire. Their answers come back to you by email as a code: paste it into <b>Referral information</b> and press Import to fill the form.</p>
+   <div class="qform">
+    <div><label>Questionnaire</label><div class="seg" id="qType"><button type="button" data-qt="gca">GCA</button><button type="button" data-qt="pmr">PMR</button></div></div>
+    <div><label for="qEmail">Clinic email for replies</label><input type="email" id="qEmail" placeholder="rheumatology.clinic@nhs.net" value="${esc(reply)}"><p class="qsmall">The patient's answers are emailed here. Leave blank and they will reply to your email instead.</p></div>
+    <div><label>Reference</label><span class="qref" id="qRef"></span> <button type="button" class="btn" id="qNew" style="margin-left:6px">New reference</button><p class="qsmall">Note this reference in the patient's record. It is the only link between the answers and the patient: no names or NHS numbers are used.</p></div>
+    <div><label for="qLink">Link</label><input type="text" id="qLink" readonly></div>
+    <div class="actions"><button type="button" class="btn primary" id="qCopyLink">Copy link</button><button type="button" class="btn" id="qCopyMail">Copy email text</button><a class="btn" id="qMail" href="#" target="_blank" rel="noopener">Open in email app</a></div>
+   </div>`);
+  const upd=()=>{ reply=$('#qEmail').value.trim(); try{ localStorage.setItem('qreply',reply); }catch(_){}
+    const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reply);
+    const link=`${QBASE}questionnaire.html?t=${qt}&ref=${ref}${ok?'&reply='+encodeURIComponent(reply):''}`;
+    $('#qLink').value=link; $('#qRef').textContent=ref;
+    document.querySelectorAll('#qType button').forEach(b=>{ const on=b.dataset.qt===qt; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+    const subj='Your rheumatology pre-clinic questionnaire';
+    const body=`Hello,\n\nBefore your appointment, please answer a short questionnaire about your symptoms. It takes about 5 minutes:\n\n${link}\n\nYour reference is ${ref}. Please do not include your name, date of birth or NHS number in your answers.\n\n${qt==='gca'?'If you notice any change in your eyesight, call 999 or go to A&E straight away. Do not wait for your appointment.':'If you develop a new headache, jaw pain when chewing or any change in your eyesight, get medical help the same day. For eyesight changes call 999 or go to A&E.'}\n\nThank you,\nRheumatology team`;
+    $('#qMail').href=`mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    window._qmail=`Subject: ${subj}\n\n${body}`; };
+  $('#qType').onclick=e=>{ const b=e.target.closest('[data-qt]'); if(b){ qt=b.dataset.qt; upd(); } };
+  $('#qEmail').oninput=upd; $('#qNew').onclick=()=>{ ref=newRef(); upd(); };
+  $('#qCopyLink').onclick=()=>copyText($('#qLink').value); $('#qCopyMail').onclick=()=>copyText(window._qmail);
+  upd();
+}
+function findCode(t){ const m=String(t).match(/GCAPMR1(z?):([\s\S]*?)(?:\n\s*\n|$)/); if(!m) return null; const body=m[2].replace(/[^A-Za-z0-9_\-]/g,''); return body.length>8?('GCAPMR1'+m[1]+':'+body):null; }
+async function decodeCode(c){
+  const z=c.startsWith('GCAPMR1z:'); let b=c.slice(c.indexOf(':')+1).replace(/-/g,'+').replace(/_/g,'/'); b+='='.repeat((4-b.length%4)%4);
+  const bytes=Uint8Array.from(atob(b),ch=>ch.charCodeAt(0));
+  const json = z ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text() : new TextDecoder().decode(bytes);
+  return JSON.parse(json);
+}
+async function importCode(code){
+  const st=$('#exStatus');
+  let d; try{ d=await decodeCode(code); }catch(e){ st.className='status err'; st.textContent='The questionnaire code is incomplete or damaged. Ask the patient to copy it again.'; return; }
+  if(isExample){ S={v:{},src:{}}; isExample=false; images=[]; }
+  if(d.t==='gca'||d.t==='pmr'){ if(d.t!==MOD) switchMod(d.t); }
+  const v=d.v||{}; const fields={};
+  Object.entries(v).forEach(([k,x])=>{ if(F[k]&&!['intake_text','p_intake_text'].includes(k)) fields[k]= (typeof x==='string'&&['text','area'].includes(F[k].type)) ? redact(x) : x; });
+  const nid=notesId(); const note=`Pre-clinic questionnaire ${d.ref||''} completed ${d.d?d.d.replace('T',' '):''}.`;
+  fields[nid]=note+(fields[nid]?' '+fields[nid]:'');
+  const done=applyExtraction({fields},'pt');
+  const s2=$('#exStatus'); s2.className='status'; s2.textContent=`Imported ${done.length} answers from questionnaire ${d.ref||''}. Patient answers are marked PATIENT: check them in clinic.`;
+}
+async function extract(){
+  let txt=(val(intakeId())||'').trim(); const st=$('#exStatus');
+  const qc=findCode(txt); if(qc){ await importCode(qc); return; }
+  if(!sampleFn){ st.className='status err'; st.textContent='No questionnaire code found. AI reading of letters and photos only works when the app is opened in Claude; fill in the form directly.'; return; }
+  const clean=redact(txt); if(clean!==txt){ txt=clean; setVal(intakeId(), clean); }
+  if(!txt && !images.length){ st.className='status err'; st.textContent='Paste, dictate or add a photo of the referral first.'; return; }
+  if(images.length && !imgOK){ st.className='status err'; st.textContent='Photos can\'t be read in this view. Paste the text instead.'; return; }
+  ctl=new AbortController(); $('#btnExtract').disabled=true; $('#btnStop').hidden=false; $('#btnStop').onclick=()=>ctl.abort();
+  st.className='status'; st.textContent='Reading the referral…';
+  const prompt = `You are extracting structured data for a ${MOD==='pmr'?'polymyalgia rheumatica (PMR)':'giant cell arteritis (GCA)'} fast-track assessment form used by NHS clinicians.
+Current local date and time: ${new Date().toISOString().slice(0,16)}.
+${images.length?`${images.length} image(s) of referral documents are attached; read them as well as the text.`:''}
+SOURCE TEXT:
+<<<
+${txt||'(no text, images only)'}
+>>>
+
+FORM FIELDS (id | label | value format):
+${schemaText()}
+
+Rules:
+- Never output patient names, dates of birth, addresses, postcodes, phone numbers, NHS/CHI/hospital numbers or any other identifier, including in "unmapped". Age in years is allowed.
+- Include a field ONLY when the source states it explicitly or it follows directly (e.g. age from a stated DOB and today's date). Never guess; omit anything not mentioned.
+- A clearly stated negative (e.g. "no visual disturbance", "denies jaw claudication") IS a value: false, or "None".
+- Use exactly the listed option strings. Convert relative times ("started pred 60 mg yesterday 9am") to absolute using the current date.
+${MOD==='gca'?'- For ultrasound segments, r_ = right, l_ = left; cst = common superficial temporal, fr = frontal, par = parietal, ax = axillary.':'- Bloods in mg/L for CRP; record the pre-steroid CRP in crp and any later review CRP in p_crp_now.'}
+- Put relevant information that fits no field into "unmapped" as short phrases.
+Reply with only JSON: {"fields": {"<id>": <value>, ...}, "unmapped": ["..."]}`;
+  try{
+    const opts={signal:ctl.signal, cache:false, onText:()=>{ st.textContent='Filling the form…'; }};
+    if(images.length) opts.images=images.map(i=>i.f);
+    const out = await sampleFn.json(prompt, opts);
+    const filled=applyExtraction(out);
+    st.textContent = filled.length? `Filled ${filled.length} field${filled.length>1?'s':''}. Check the purple fields and change anything that's wrong.` : 'Nothing in the source matched a form field.';
+  }catch(e){ if(e?.code!=='cancelled'){ st.className='status err'; st.textContent=errCopy(e); } else st.textContent='Stopped.'; }
+  finally{ $('#btnExtract').disabled=!sampleFn; $('#btnStop').hidden=true; }
+}
+function coerce(f, v){
+  if(v===null||v===undefined) return undefined;
+  switch(f.type){
+    case 'yn': return v===true||v==='true'||v==='Yes'?true: v===false||v==='false'||v==='No'?false:undefined;
+    case 'choice': return f.opts.includes(v)?v: f.opts.find(o=>o.toLowerCase()===String(v).toLowerCase());
+    case 'multi': { const a=(Array.isArray(v)?v:[v]).map(x=>f.opts.find(o=>o.toLowerCase()===String(x).toLowerCase())).filter(Boolean); return a.length?a:undefined; }
+    case 'num': { const n=parseFloat(v); return isNaN(n)?undefined:String(n); }
+    case 'date': return /^\d{4}-\d{2}-\d{2}/.test(v)?String(v).slice(0,10):undefined;
+    case 'dt': return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)?String(v).slice(0,16): /^\d{4}-\d{2}-\d{2}$/.test(v)?v+'T09:00':undefined;
+    case 'check': return v===true||v==='true'?true:undefined;
+    default: return String(v);
+  }
+}
+function applyExtraction(out, src='ai'){
+  const fields=out?.fields||{}, done=[];
+  Object.entries(fields).forEach(([id,raw])=>{ const f=F[id]; if(!f||id===intakeId()||(f.mod!==MOD&&f.mod!=='shared')) return; const v=coerce(f,raw); if(v===undefined) return; S.v[id]=v; S.src[id]=src; done.push(id); });
+  if(Array.isArray(out?.unmapped)&&out.unmapped.length){ const add=out.unmapped.map(String).join('\n'); const nid=notesId(); S.v[nid]=(S.v[nid]?S.v[nid]+'\n':'')+add; S.src[nid]=src; done.push(nid); }
+  if(done.some(i=>i==='age')) S.src.age=src;
+  renderMain();
+  $('#filled').innerHTML = done.map(id=>{ const target=F[id].seg?'usTable':'w_'+id; return `<a href="#${target}">${esc(F[id].label)}</a>`; }).join('');
+  done.forEach(id=>{ const el=document.getElementById('w_'+id)||document.getElementById('in_'+id)||document.querySelector(`[data-f="${id}"]`); if(el) reveal(el); });
+  return done;
+}
+async function aiSummary(){
+  const out=$('#aiSum'), st=$('#sumStatus'); const c=new AbortController();
+  out.hidden=false; out.textContent='Thinking…'; st.textContent='';
+  try{
+    await sampleFn(`Write a concise rheumatology fast-track ${MOD==='pmr'?'polymyalgia rheumatica (PMR)':'GCA'} clinic letter to the GP from the structured assessment below. Use UK spelling and plain clinical English. Sections: Diagnosis/working diagnosis; Presentation; Investigations${MOD==='pmr'?' (bloods, mimic screen, classification, response)':' (bloods, ultrasound, biopsy)'} with scores; Treatment started; Plan and safety-netting; Actions for GP. Do not include any patient identifiers: begin with the line "[Patient label]". Use only facts given; write "not recorded" where needed; do not invent results. No markdown headings with #, use plain capitalised headings.\n\n${modSummary()}`,
+      {signal:c.signal, cache:false, onText:({text})=>{ out.textContent=text; }});
+  }catch(e){ if(e?.text) out.textContent=e.text; else out.hidden=true; st.className='status err'; st.textContent=errCopy(e); }
+}
+async function save(filename, data){
+  if(!downloads){ toast('Downloads aren\'t available in this view. Use Copy instead.'); return; }
+  try{ await downloads.save({filename,data}); toast('Saved '+filename); }catch(e){ if(e?.code!=='declined') toast('Couldn\'t save the file here. Use Copy instead.'); }
+}
+
+/* ---------- module switching ---------- */
+let MOD = 'gca';
+try{ if(location.hash==='#pmr') MOD='pmr'; }catch(_){}
+const intakeId = () => MOD==='pmr'?'p_intake_text':'intake_text';
+const notesId = () => MOD==='pmr'?'p_extra_notes':'extra_notes';
+const modSummary = () => MOD==='pmr'?pmrSummary():buildSummary();
+function setModUI(){
+  $('#brandT').textContent = MOD==='pmr'?'PMR Fast-Track Assessment':'GCA Fast-Track Assessment';
+  $('#brandS').textContent = MOD==='pmr'?'Referral, investigations, classification, treatment, review and passport: Parts A–G':'Referral, triage, ultrasound, biopsy and passport: Parts A–G';
+  ['gca','pmr'].forEach(m=>{ const b=$('#tab-'+m); b.classList.toggle('on',m===MOD); b.setAttribute('aria-selected',m===MOD); });
+}
+function switchMod(m){
+  if(m===MOD) return; MOD=m; images.forEach(i=>URL.revokeObjectURL(i.url)); images=[];
+  try{ history.replaceState(null,'','#'+m); }catch(_){ try{ location.hash=m; }catch(__){} }
+  setModUI(); renderMain(); window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if((h==='gca'||h==='pmr')&&h!==MOD){ MOD=h; setModUI(); renderMain(); } });
+function renderMain(){ if(MOD==='pmr') renderPMR(); else renderGCAView(); }
+
+/* ---------- PMR sections ---------- */
+const P_SECTIONS = [
+  {id:'intake',code:'IN',short:'Referral info'},{id:'a',code:'A',short:'Triage'},{id:'b',code:'B',short:'Bloods'},{id:'c',code:'C',short:'Classify'},
+  {id:'d',code:'D',short:'Start'},{id:'e',code:'E',short:'Review'},{id:'f',code:'F',short:'Follow-up'},{id:'g',code:'G',short:'Passport'}];
+const P_SECFIELDS = {
+  a:['age','sex','p_shoulder','p_hip','p_stiff_min','p_duration','p_other_joints','headache','scalp','jaw','visual','p_wtloss','p_night','p_neuro','p_fever','p_triage'],
+  b:['crp','esr','plt','egfr','alt','p_calcium','p_tsh','p_ck','p_rf','p_ccp','p_electro','p_urine'],
+  c:['p_us_done'], d:['p_dose','p_steroid_dt','p_d_bloods','p_d_gcawarn','p_d_bone','p_d_card','p_d_review'],
+  e:['p_rev_dt','p_improve','p_crp_now','p_decision'], f:['p_taper','p_sparing','p_next','p_f_3m','p_f_dexa','p_f_relplan','p_f_gcaq'],
+  g:['p_g1','p_g2','p_g3','p_g4','p_g5','p_g6','p_g7','p_g8','p_g9']};
+
+function intakeSection(){
+  return `<section class="card intake" id="sec-intake">
+    <div class="sh"><span class="code">IN</span><h2>Referral information</h2></div>
+    <p class="lead">Paste a GP letter or clinic note, dictate a history, or add photos of a paper referral or blood results. Claude reads it and fills in every PMR field below that the source mentions, including the shared patient details and bloods. Filled fields are marked <span class="tag ai">AI</span>; check them and change anything that is wrong. Remove identifiers first: NHS numbers, dates of birth, names, postcodes and phone numbers typed in the text are stripped automatically before sending, but crop or cover them on photos yourself.</p>
+    <div class="fld wide" style="padding:0">${control(F[intakeId()])}</div>
+    <div class="drop" id="drop" style="margin-top:10px">
+      <span id="imgnote">Photos of referral forms or results</span>
+      <label class="btn" for="imgIn">Add photos</label><input type="file" id="imgIn" accept="image/*" multiple hidden>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+    <div class="actions">
+      <button class="btn ai" id="btnExtract" type="button">Extract and fill the form</button>
+      <button class="btn" id="btnStop" type="button" hidden>Stop</button>
+      <span class="status" id="exStatus"></span>
+    </div>
+    <div class="filled" id="filled"></div>
+    <div class="qrow"><button class="btn primary" type="button" id="btnQ">Send pre-clinic questionnaire</button></div>
+  </section>`;
+}
+function sect(id,code,title,lead,body){ return `<section class="card" id="sec-${id}"><div class="sh"><span class="code">${code}</span><h2>${title}</h2></div>${lead?`<p class="lead">${lead}</p>`:''}${body}</section>`; }
+function renderPMR(){
+  $('#main').innerHTML = `
+  ${isExample?`<div class="banner" id="exbanner"><span><b>Example (fictional).</b> Press <b>New patient</b> to start.</span></div>`:''}
+  ${intakeSection()}
+  ${sect('a','A','Referral & triage','Tap <b>?</b> beside a question for help and <b>E</b> to see which criteria or guideline it relates to. Patient details, bloods and GCA symptoms are shared with the GCA tab.',
+    `<h3>Patient & referrer: no names, dates of birth or NHS numbers are recorded; age and sex only</h3>${grid(['age','sex','weight','referrer','ref_dt','anticoag','comorb'])}
+     <h3>Core features</h3>${grid(['p_shoulder','p_hip','p_neck','p_stiff_min','p_duration','p_onset','p_other_joints','p_shoulder_rom','p_weakness','p_tender'])}
+     <h3>GCA screen: any yes means same-day GCA assessment</h3>${grid(['headache','scalp','jaw','visual','visual_signs','constitutional'])}
+     <h3>Red flags for malignancy or infection</h3>${grid(['p_wtloss','p_night','p_neuro','p_fever','p_cancer','p_bone'])}
+     <h3>Mimics</h3>${grid(['p_mimics'])}
+     <h3>Triage</h3>${grid(['p_received','p_triaged_by','p_triage'])}`)}
+  ${sect('b','B','Investigations before steroids','Take these before the first dose: a steroid response is part of the diagnosis, and steroids can mask infection, malignancy and myositis. The ESR limit is age-adjusted (men age ÷ 2, women (age + 10) ÷ 2).',
+    `<h3>Inflammatory markers & routine</h3>${grid(['bloods_dt','crp','esr','pv','plt','hb','egfr','alt','glucose','hba1c'])}
+     <h3>To exclude mimics</h3>${grid(['p_calcium','p_alp','p_tsh','p_ck','p_rf','p_ccp','p_ana','p_electro','p_sflc','p_urine','p_cxr','p_vitd'])}
+     <p class="status" id="pInvNote"></p>`)}
+  ${sect('c','C','Classification & imaging','The 2012 EULAR/ACR criteria are for classification, not diagnosis, but they give a structured check. Required: age ≥50, bilateral shoulder aching and raised CRP and/or ESR. PMR at ≥4 of 6 points without ultrasound, or ≥5 of 8 with it.',
+    `<div class="tblwrap" id="pClass"></div>
+     <h3>Ultrasound (optional)</h3>${grid(['p_us_done','p_us_shhip','p_us_both'])}
+     <h3>Large-vessel imaging (if GCA features, constitutional symptoms or poor response)</h3>${grid(['p_pet','p_pet_lv'])}`)}
+  ${sect('d','D','Start treatment','<span id="pDoseAdvice"></span>',
+    `${grid(['p_dose','p_steroid_dt'])}<h3>At the first dose</h3>${checklist(['p_d_bloods','p_d_gcawarn','p_d_bone','p_d_ppi','p_d_base','p_d_card','p_d_leaflet','p_d_review'])}`)}
+  ${sect('e','E','Response review & decision','Review at 2–3 weeks. Expect at least 70% global improvement and a falling CRP. An incomplete response should prompt a rethink of the diagnosis, not ever-higher doses. The PMR activity score (PMR-AS) calculates live.',
+    `<h3>Response</h3>${grid(['p_rev_dt','p_improve','p_crp_now','p_stiff_now','p_vas_pain','p_vas_phys','p_eul'])}<p class="status" id="pAS"></p>
+     <h3>Decision</h3>${grid(['p_decision','p_alt','p_managed','p_clinician','p_dx_date','p_plan'])}
+     <h3>Summary for review</h3><pre class="summary" id="summary"></pre>
+     <div class="actions">
+      <button class="btn primary" type="button" data-copy="summary">Copy summary</button>
+      <button class="btn" type="button" id="btnDlMd">Download summary (.md)</button>
+      <button class="btn" type="button" id="btnDlJson">Download data (.json)</button>
+      <button class="btn ai" type="button" id="btnAiSum">Draft GP letter with Claude</button>
+      <span class="status" id="sumStatus"></span></div>
+     <div class="ai-out" id="aiSum" hidden></div>`)}
+  ${sect('f','F','Follow-up, taper & relapse','EULAR 2025: reach 10 mg within 1–2 months and aim to stop within a year. The taper below is generated from the starting dose and the first-dose date; adjust it to the patient.',
+    `${grid(['p_taper','p_sparing','p_relapses','p_next'])}
+     <h3>Example prednisolone taper</h3><div class="tblwrap" id="pTaper"></div>
+     <h3>Steroid-sparing options</h3><div class="tblwrap"><table class="mx"><thead><tr><th>Agent</th><th>When</th><th>Notes</th></tr></thead><tbody>
+       <tr><td>Methotrexate 7.5–10 mg weekly + folic acid</td><td>Early, if relapse risk or steroid-toxicity risk is high; or after relapse</td><td>Alternative to IL-6 inhibitors where these are unavailable (EULAR 2025)</td></tr>
+       <tr><td>Sarilumab 200 mg SC every 2 weeks</td><td>Relapsing or refractory PMR: preferred IL-6 option (EULAR 2025)</td><td>Licensed for PMR; NHS access depends on local commissioning</td></tr>
+       <tr><td>Tocilizumab 162 mg SC weekly</td><td>Alternative IL-6 option; may be considered in selected new-onset patients</td><td>Off-label in PMR; CRP is suppressed on IL-6 inhibitors</td></tr></tbody></table></div>
+     <h3>Relapse</h3><div class="tblwrap"><table class="mx"><thead><tr><th>Situation</th><th>Action</th></tr></thead><tbody>
+       <tr><td>PMR symptoms return (with or without a rising CRP)</td><td>Back to at least the last effective dose, then taper again over 4–8 weeks. First relapse: discuss with rheumatology. Second relapse: refer (BSR 2026).</td></tr>
+       <tr><td>New headache, jaw pain or visual symptoms</td><td>Same-day GCA assessment. Use the GCA tab.</td></tr>
+       <tr><td>Raised CRP alone, no symptoms</td><td>Do not raise steroids. Repeat in 2–4 weeks and look for infection.</td></tr></tbody></table></div>
+     <h3>Monitoring & safety</h3>${checklist(['p_f_3m','p_f_dexa','p_f_vacc','p_f_checks','p_f_relplan','p_f_gcaq'])}`)}
+  ${sect('g','G','PMR passport','Tick these at diagnosis. The passport page below is built from the form for the patient to keep.',
+    `${checklist(['p_g1','p_g2','p_g3','p_g4','p_g5','p_g6','p_g7','p_g8','p_g9'])}
+     <h3>Passport front page</h3><pre class="summary" id="passportOut"></pre>
+     <div class="actions"><button class="btn" type="button" data-copy="passportOut">Copy passport page</button></div>
+     <h3>Anything else</h3>${grid(['p_extra_notes'])}`)}${scoresSection()}`;
+  collapsify(); initImages(); recompute();
+}
+
+/* ---------- PMR calculations ---------- */
+function esrULN(){ const a=ageNow(); if(a==null) return null; return val('sex')==='Female'?(a+10)/2:a/2; }
+function pRaised(){ const c=num(val('crp')), e=num(val('esr')), u=esrULN(); if(c==null&&e==null) return null; return (c!=null&&c>5)||(e!=null&&u!=null&&e>u)||(e!=null&&u==null&&e>30); }
+function pWeeks(){ const s=parseDT(val('p_steroid_dt')); return s?(Date.now()-s)/(7*864e5):null; }
+function pMonths(){ const w=pWeeks(); return w==null?null:w/4.345; }
+function pCore(){ const a=ageNow(), st=num(val('p_stiff_min')), du=num(val('p_duration'));
+  return [['Age ≥50',a==null?null:a>=50],
+   ['Bilateral shoulder and/or hip girdle aching',!has(val('p_shoulder'))&&!has(val('p_hip'))?null:(val('p_shoulder')==='Bilateral'||val('p_hip')==='Bilateral')],
+   ['Morning stiffness >45 min',st==null?null:st>45],['Symptoms ≥2 weeks',du==null?null:du>=2],['Raised CRP or ESR',pRaised()]]; }
+function pClassCalc(){
+  const a=ageNow();
+  const req=[['Age ≥50',a==null?null:a>=50],['Bilateral shoulder aching',has(val('p_shoulder'))?val('p_shoulder')==='Bilateral':null],['Raised CRP and/or ESR',pRaised()]];
+  const st=num(val('p_stiff_min')), us=val('p_us_done')===true;
+  const rows=[['Morning stiffness >45 min',2,st==null?null:st>45],
+    ['Hip pain or limited range of motion',1,has(val('p_hip'))?val('p_hip')!=='None':null],
+    ['Absence of RF and anti-CCP',2,(has(val('p_rf'))&&has(val('p_ccp')))?(val('p_rf')==='Negative'&&val('p_ccp')==='Negative'):null],
+    ['Absence of other joint pain',1,has(val('p_other_joints'))?val('p_other_joints')==='None':null]];
+  if(us){ rows.push(['US: ≥1 shoulder and ≥1 hip findings',1,has(val('p_us_shhip'))?val('p_us_shhip')===true:null]); rows.push(['US: both shoulders',1,has(val('p_us_both'))?val('p_us_both')===true:null]); }
+  const total=rows.reduce((s,r)=>s+(r[2]===true?r[1]:0),0), thr=us?5:4, max=us?8:6;
+  const reqMet=req.every(r=>r[1]===true), reqFail=req.some(r=>r[1]===false);
+  return {req,rows,total,thr,max,us,reqMet,reqFail,meets:reqMet&&total>=thr};
+}
+function pGcaFlags(){ const r=[], v=val('visual');
+  if(val('headache')&&val('headache')!=='None') r.push('new headache'); if(val('scalp')===true) r.push('scalp tenderness');
+  if(val('jaw')===true) r.push('jaw claudication'); if(v&&v!=='None') r.push('visual symptoms'); if(val('visual_signs')===true) r.push('visual signs');
+  if(val('p_pet_lv')===true) r.push('large-vessel vasculitis on imaging'); return r; }
+function pRedFlags(){ return [['p_wtloss','weight loss'],['p_night','night or rest pain'],['p_neuro','neurological signs'],['p_fever','fever or systemic upset'],['p_bone','focal bone pain']].filter(([id])=>val(id)===true).map(x=>x[1]); }
+function pTriggers(){
+  const r=[]; const a=ageNow(), st=num(val('p_stiff_min')), du=num(val('p_duration')), c=num(val('crp')), e=num(val('esr'));
+  if(a!=null&&a<60) r.push('Age under 60');
+  if(val('p_onset')==='Gradual (months)'||(du!=null&&du>8)) r.push('Chronic onset (over 2 months)');
+  if(val('p_shoulder')==='None') r.push('No shoulder involvement');
+  if(st!=null&&st<30) r.push('Little or no inflammatory stiffness');
+  if(val('p_other_joints')==='Peripheral synovitis') r.push('Peripheral synovitis: consider RA or CPPD');
+  if(val('p_weakness')===true||(num(val('p_ck'))??0)>250) r.push('True weakness or raised CK: consider myositis');
+  if(pRaised()===false) r.push('Normal CRP and ESR');
+  if((c??0)>100||(e??0)>100) r.push('Very high CRP or ESR: consider infection or malignancy');
+  if(val('p_rf')==='Positive'||val('p_ccp')==='Positive') r.push('Positive RF or anti-CCP: consider RA');
+  if(val('p_ana')==='Positive') r.push('Positive ANA: consider connective tissue disease');
+  if(val('p_electro')==='Paraprotein'||val('p_sflc')==='Abnormal') r.push('Paraprotein or abnormal light chains: consider myeloma');
+  if((num(val('p_calcium'))??0)>2.6) r.push('Raised calcium');
+  const t=num(val('p_tsh')); if(t!=null&&(t>4.5||t<0.3)) r.push('Abnormal TSH: thyroid disease can mimic PMR');
+  if(val('p_urine')==='Abnormal'||val('p_cxr')==='Abnormal') r.push('Abnormal urine dipstick or chest X-ray');
+  if(has(val('p_mimics'))) r.push('Possible mimic: '+val('p_mimics').join(', ').toLowerCase());
+  if(pRedFlags().length) r.push('Red flags: '+pRedFlags().join(', '));
+  const imp=num(val('p_improve')); if(imp!=null&&imp<70) r.push('Incomplete steroid response (<70%)');
+  const rel=num(val('p_relapses')); if(rel!=null&&rel>=2) r.push('Two or more relapses: refer (BSR 2026)'); else if(rel===1) r.push('First relapse: discuss with rheumatology (BSR 2026)');
+  const m=pMonths(); if(m!=null&&m>=18) r.push('Steroids for 18 months or more: refer (BSR 2026)');
+  return r;
+}
+function pRisk(){ const r=[]; const e=num(val('esr'));
+  if(val('sex')==='Female') r.push('Female'); if(e!=null&&e>40) r.push('ESR >40 mm/h'); if(val('p_other_joints')==='Peripheral synovitis') r.push('Peripheral arthritis');
+  const tox=(val('comorb')||[]).filter(x=>['Diabetes','Osteoporosis / fracture','Peptic ulcer','Glaucoma / cataract','Hypertension'].includes(x));
+  return {relapse:r,tox}; }
+function pmrAS(){ const c=num(val('p_crp_now')), vp=num(val('p_vas_pain')), vf=num(val('p_vas_phys')), ms=num(val('p_stiff_now')), eul=val('p_eul');
+  if([c,vp,vf,ms].some(x=>x==null)||!eul) return null; const v=c/10+vp+vf+ms*0.1+(+eul[0]); return {v,band:v<7?'Low':v<=17?'Medium':'High'}; }
+function pDose(){ const rk=pRisk();
+  let t='Suggested start: <b>prednisolone 15 mg once daily</b> (BSR typical dose; EULAR 2025 range 15–25 mg).';
+  if(rk.tox.length) t+=` Steroid-toxicity risk (${rk.tox.join(', ').toLowerCase()}): stay at the lower end and consider early methotrexate.`;
+  else if(rk.relapse.length>=2) t+=' Several relapse-risk factors: consider early methotrexate.';
+  return t+' IM methylprednisolone 120 mg every 3–4 weeks is an alternative for selected patients. Take the Part B bloods before the first dose.'; }
+function pNext(){
+  const g=pGcaFlags(); if(g.length) return {t:`Possible GCA (${g.join(', ')}): same-day GCA assessment. Open the GCA tab; shared details carry over.`,gca:true};
+  const rf=pRedFlags(); if(rf.length&&!val('p_steroid_dt')) return {t:`Red flags (${rf.join(', ')}): look for malignancy or infection and discuss with rheumatology before starting steroids.`};
+  if(val('p_decision')==='PMR confirmed') return {t:'PMR confirmed: follow the taper (Part F), review at least 3-monthly in year 1, ask about GCA symptoms at every visit.'};
+  if(val('p_decision')==='Not PMR') return {t:'Not PMR: taper any steroids and manage the working diagnosis.'};
+  if(val('p_decision')==='Uncertain: refer') return {t:'Diagnosis uncertain: refer to rheumatology with the summary from Part E.'};
+  const imp=num(val('p_improve'));
+  if(imp!=null) return {t: imp>=70?'Typical response (≥70% better): record the diagnosis in Part E and continue the taper in Part F.':'Incomplete response (<70%): reconsider the diagnosis and refer to rheumatology rather than escalating steroids.'};
+  const w=pWeeks(); if(w!=null) return {t: w<2?`On treatment ${Math.max(0,Math.floor(w*7))} days: review the response at 2–3 weeks (expect ≥70% improvement and a falling CRP).`:'Response review due: record it in Part E.'};
+  const tr=pTriggers(); if(tr.length) return {t:`Atypical features (${tr.length}): refer to rheumatology, ideally before starting steroids.`};
+  const core=pCore(); if(core.every(c=>c[1]===true)) return {t:'Typical PMR picture: complete the Part B bloods, then start prednisolone 15 mg (Part D).'};
+  return {t:'Record the core features (Part A) and bloods (Part B) to judge whether this is typical PMR.'};
+}
+
+/* ---------- PMR rendering ---------- */
+const tick = b => b===true?'<b style="color:var(--good)">✓</b>':b===false?'<b style="color:var(--alert)">✗</b>':'<span class="status">–</span>';
+function recomputePMR(){
+  renderPanelPMR();
+  const pc=pClassCalc(), el=$('#pClass');
+  if(el) el.innerHTML = `<table class="mx"><thead><tr><th>2012 EULAR/ACR criterion</th><th>Points</th><th>This patient</th></tr></thead><tbody>
+    ${pc.req.map(([l,b])=>`<tr><td>Required: ${l}</td><td>—</td><td>${tick(b)}</td></tr>`).join('')}
+    ${pc.rows.map(([l,p,b])=>`<tr><td>${l}</td><td>${p}</td><td>${tick(b)}</td></tr>`).join('')}
+    <tr><th>Total</th><th>${pc.total} / ${pc.max}</th><th>${pc.reqFail?'Required criterion not met':pc.meets?`Meets classification (≥${pc.thr})`:`Needs ≥${pc.thr}${pc.reqMet?'':'; required items incomplete'}`}</th></tr></tbody></table>`;
+  const da=$('#pDoseAdvice'); if(da) da.innerHTML=pDose();
+  const as=pmrAS(), pa=$('#pAS'); if(pa) pa.innerHTML = as?`PMR-AS <b class="${as.band==='High'?'over':''}">${as.v.toFixed(1)}</b>: ${as.band.toLowerCase()} activity (low &lt;7, medium 7–17, high &gt;17). Formula: CRP (mg/dL) + pain VAS + physician VAS + stiffness (min) × 0.1 + EUL.`:'PMR-AS needs CRP now, both VAS scores, stiffness now and EUL.';
+  const inv=$('#pInvNote'); if(inv){ const u=esrULN(); const tr=pTriggers().filter(x=>/RF|ANA|Paraprotein|calcium|TSH|CK|urine|Normal CRP|Very high/.test(x)); inv.innerHTML=[u!=null?`Age-adjusted ESR upper limit: <b>${Math.round(u)} mm/h</b>.`:'',tr.length?`<b class="over">Check:</b> ${esc(tr.join('; '))}.`:''].filter(Boolean).join(' '); }
+  $('#summary') && ($('#summary').textContent=pmrSummary());
+  $('#passportOut') && ($('#passportOut').textContent=pmrPassport());
+  renderPTaper();
+}
+function renderPanelPMR(){
+  const g=pGcaFlags(), rf=pRedFlags(), nx=pNext(), core=pCore(), pc=pClassCalc(), tr=pTriggers(), as=pmrAS(), rk=pRisk();
+  const w=pWeeks(), m=pMonths(); const coreN=core.filter(c=>c[1]===true).length;
+  setAlertStrip([...(g.length?['possible GCA ('+g.join(', ')+')']:[]),...rf]);
+  $('#panel').innerHTML = `
+    ${g.length?`<div class="pcard redflags"><h4>Possible GCA</h4><ul><li>${esc(g.join(', '))}: same-day GCA assessment</li></ul><div class="actions" style="margin-top:8px"><button class="btn primary" type="button" data-switch="gca">Open GCA tab</button></div></div>`:''}
+    ${rf.length?`<div class="pcard redflags"><h4>Red flags</h4><ul>${rf.map(r=>`<li>${esc(r)}</li>`).join('')}</ul><p class="status" style="margin:6px 0 0">Look for malignancy or infection before steroids.</p></div>`:''}
+    <div class="pcard next"><h4>Suggested next step</h4><p>${esc(nx.t)}</p></div>
+    <div class="pcard"><h4>Core features</h4><div class="big">${coreN}<small> / 5</small></div>
+      <span class="pill ${coreN===5&&!tr.length?'good':tr.length?'warn':'neutral'}">${coreN===5&&!tr.length?'Typical PMR picture':tr.length?'Atypical features present':'Incomplete'}</span>
+      <ul class="plist">${core.map(([l,b])=>`<li>${esc(l)} ${tick(b)}</li>`).join('')}</ul></div>
+    <div class="pcard"><h4>2012 EULAR/ACR <span>${pc.us?'with US':'no US'}</span></h4><div class="big">${pc.total}<small> / ${pc.max}</small></div>
+      <span class="pill ${pc.reqFail?'alert':pc.meets?'good':'neutral'}">${pc.reqFail?'Required criterion not met':pc.meets?`≥${pc.thr}: meets classification`:`${pc.thr} needed`}</span></div>
+    <div class="pcard"><h4>Referral triggers</h4>${tr.length?`<ul class="plist" style="color:var(--warn)">${tr.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:'<p class="status" style="margin:0">None recorded. A typical PMR presentation with a full response can be managed in primary care.</p>'}</div>
+    <div class="pcard"><h4>Treatment clock</h4>${w!=null?`<div class="clock"><div><div class="big" style="font-size:22px">${w<2?Math.floor(w*7)+'<small> d</small>':Math.floor(w)+'<small> wk</small>'}</div><div class="status">on treatment</div><div class="bar"><i class="${w>3?'warn':''}" style="width:${Math.min(100,w/3*100)}%"></i></div><div class="status">Review at 2–3 weeks</div></div>
+      <div><div class="big" style="font-size:22px">${m.toFixed(1)}<small> mo</small></div><div class="status">of 18-month limit</div><div class="bar"><i class="${m>=18?'alert':m>=12?'warn':''}" style="width:${Math.min(100,m/18*100)}%"></i></div><div class="status">Refer at 18 months (BSR 2026)</div></div></div>`:'<p class="status" style="margin:0">Enter the first dose time in Part D to start the review clock.</p>'}</div>
+    <div class="pcard"><h4>PMR activity score</h4><div class="big">${as?as.v.toFixed(1):'–'}</div>${as?`<span class="pill ${as.band==='Low'?'good':as.band==='Medium'?'warn':'alert'}">${as.band} activity</span>`:'<span class="pill neutral">Record at review (Part E)</span>'}</div>
+    <div class="pcard dose"><h4>Relapse & toxicity risk</h4><ul class="plist"><li>Relapse risk factors <b>${rk.relapse.length}</b></li>${rk.relapse.map(x=>`<li>${esc(x)}</li>`).join('')}<li>Steroid-toxicity risks <b>${rk.tox.length}</b></li></ul>
+      ${(rk.relapse.length>=2||rk.tox.length)?'<p class="status" style="margin:6px 0 0">Consider early methotrexate (EULAR 2015/2025, BSR 2026).</p>':''}</div>`;
+}
+function pTaperSteps(){
+  const d=val('p_dose')||'Prednisolone 15 mg', opt=val('p_taper')||'EULAR 2025 (stop ~11 months)';
+  if(d.startsWith('IM')||opt.startsWith('IM')) return null;
+  const S=parseFloat(d.replace(/[^0-9.]/g,''))||15, slow=opt.startsWith('Slower');
+  const steps=[]; [25,20,15,12.5].filter(x=>x<=S).forEach(x=>steps.push([x,slow||S<=15?3:2,x===S?'Start':'Taper to 10 mg']));
+  steps.push([10,slow?6:4,'Hold at 10 mg']);
+  for(let x=9;x>=1;x--) steps.push([x,slow?6:4,'Reduce 1 mg']);
+  steps.push([0,0,'Stop if well; check morning cortisol if symptomatic']);
+  return steps;
+}
+function renderPTaper(){
+  const el=$('#pTaper'); if(!el) return; const steps=pTaperSteps();
+  if(!steps){ el.innerHTML='<p class="status" style="padding:10px;margin:0">IM methylprednisolone: 120 mg every 3–4 weeks, then reduce per the local protocol (BSR 2009 regimen). Write the agreed schedule in the steroid diary.</p>'; return; }
+  let t=parseDT(val('p_steroid_dt'))||Date.now();
+  el.innerHTML=`<table class="taper"><thead><tr><th>From</th><th>Daily dose</th><th>For</th><th>Step</th></tr></thead><tbody>${steps.map(([dd,wk,ph])=>{ const r=`<tr><td class="n">${fmtD(t)}</td><td class="n">${dd} mg</td><td>${wk?wk+' weeks':'—'}</td><td>${ph}</td></tr>`; t+=wk*7*864e5; return r; }).join('')}</tbody></table>`;
+}
+function pmrSummary(){
+  const pc=pClassCalc(), tr=pTriggers(), as=pmrAS(), g=pGcaFlags(), rf=pRedFlags(), core=pCore(), rk=pRisk();
+  const yn=b=>b===true?'yes':b===false?'no':'—';
+  return [
+`PMR FAST-TRACK ASSESSMENT${isExample?'  [EXAMPLE – FICTIONAL PATIENT]':''}
+Patient: age ${L('age')} | ${L('sex')} | weight ${L('weight')} kg (no identifiers recorded)
+Referrer: ${L('referrer')} | Referred ${L('ref_dt')}
+Comorbidities: ${L('comorb')} | Anticoagulation: ${L('anticoag')}`,
+`ALERTS
+${g.length?'  ! Possible GCA: '+g.join(', ')+' – same-day GCA assessment':'  GCA screen: no symptoms recorded'}${rf.length?'\n  ! Red flags: '+rf.join(', '):''}`,
+`PRESENTATION
+  Shoulder girdle ${L('p_shoulder')} | Hip girdle ${L('p_hip')} | Neck ${L('p_neck')} | Morning stiffness ${L('p_stiff_min')} min
+  Duration ${L('p_duration')} weeks (${L('p_onset')}) | Other joints ${L('p_other_joints')} | True weakness ${L('p_weakness')}
+  Core features met: ${core.filter(c=>c[1]===true).length}/5 (${core.map(([l,b])=>l+' '+yn(b)).join('; ')})${has(val('p_mimics'))?'\n  Mimics considered: '+L('p_mimics'):''}`,
+`INVESTIGATIONS (${L('bloods_dt')})
+  CRP ${L('crp')} mg/L | ESR ${L('esr')} mm/h${esrULN()!=null?' (ULN '+Math.round(esrULN())+')':''} | PV ${L('pv')} | Plt ${L('plt')} | Hb ${L('hb')} | eGFR ${L('egfr')} | ALT ${L('alt')}
+  Ca ${L('p_calcium')} | ALP ${L('p_alp')} | TSH ${L('p_tsh')} | CK ${L('p_ck')} | HbA1c ${L('hba1c')} | Vit D ${L('p_vitd')}
+  RF ${L('p_rf')} | Anti-CCP ${L('p_ccp')} | ANA ${L('p_ana')} | Electrophoresis ${L('p_electro')} | SFLC/BJP ${L('p_sflc')} | Urine ${L('p_urine')} | CXR ${L('p_cxr')}`,
+`CLASSIFICATION & IMAGING
+  2012 EULAR/ACR: ${pc.total}/${pc.max} ${pc.us?'(with US)':'(without US)'} – ${pc.reqFail?'required criterion not met':pc.meets?'meets classification':'below threshold or incomplete'}${val('p_pet')?'\n  Large-vessel imaging: vasculitis '+L('p_pet_lv'):''}`,
+`REFERRAL TRIGGERS
+${tr.length?tr.map(t=>'  - '+t).join('\n'):'  None recorded'}`,
+`TREATMENT
+  ${L('p_dose')} from ${L('p_steroid_dt')} | Taper: ${L('p_taper')} | Steroid-sparing: ${L('p_sparing')}
+  Relapse-risk factors: ${rk.relapse.join(', ')||'none'} | Steroid-toxicity risks: ${rk.tox.join(', ')||'none recorded'}
+  First-dose checklist: ${['p_d_bloods','p_d_gcawarn','p_d_bone','p_d_ppi','p_d_base','p_d_card','p_d_leaflet','p_d_review'].filter(i=>val(i)).length}/8`,
+`RESPONSE REVIEW (${L('p_rev_dt')})
+  Global improvement ${L('p_improve')}% | CRP now ${L('p_crp_now')} mg/L | Stiffness now ${L('p_stiff_now')} min | Pain VAS ${L('p_vas_pain')} | Physician VAS ${L('p_vas_phys')} | EUL ${L('p_eul')}
+  PMR-AS: ${as?as.v.toFixed(1)+' ('+as.band.toLowerCase()+' activity)':'not calculable'}`,
+`DECISION
+  Suggested next step: ${pNext().t}
+  Diagnosis: ${L('p_decision')}${has(val('p_alt'))?' – working diagnosis '+val('p_alt'):''} | Managed by: ${L('p_managed')}
+  Clinician: ${L('p_clinician')} | Date: ${L('p_dx_date')}${has(val('p_plan'))?'\n  Plan: '+val('p_plan'):''}
+  Relapses so far: ${L('p_relapses')} | Next review: ${L('p_next')}${has(val('p_extra_notes'))?'\n  Other: '+val('p_extra_notes'):''}`].join('\n\n');
+}
+function pmrPassport(){
+  const st=pTaperSteps(); let ten='—', stop='—';
+  if(st){ let t=parseDT(val('p_steroid_dt'))||Date.now(); st.forEach(([dd,wk])=>{ if(dd===10&&ten==='—') ten=fmtD(t); if(dd===0) stop=fmtD(t); t+=wk*7*864e5; }); }
+  return `POLYMYALGIA RHEUMATICA PASSPORT
+[Affix patient label here]
+Diagnosis: ${L('p_decision')}   Date: ${L('p_dx_date')}   Clinician: ${L('p_clinician')}
+At diagnosis: CRP ${L('crp')}  ESR ${L('esr')}  Morning stiffness ${L('p_stiff_min')} min
+Treatment: ${L('p_dose')} from ${L('p_steroid_dt')}
+Plan: 10 mg from about ${ten}; aim to stop about ${stop} if well
+Other medicines: Bone protection ${val('p_d_bone')?'✓':'–'}  PPI ${val('p_d_ppi')?'✓':'–'}  Steroid-sparing: ${L('p_sparing')}
+Next review: ${L('p_next')}
+
+IF YOUR PMR SYMPTOMS COME BACK: go back to the last dose that worked and contact your GP or rheumatology team.
+NEW HEADACHE, JAW PAIN ON CHEWING OR ANY CHANGE IN VISION: SAME-DAY HELP – CALL 999 OR GO TO A&E FOR VISION CHANGES.
+Never stop steroids suddenly. Carry your Steroid Emergency Card. More information: PMRGCAuk.`;
+}
+function loadExamplePMR(){
+  const now=Date.now(); const iso=t=>{ const d=new Date(t); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+  const st=now-17*864e5;
+  const v={ age:'71', sex:'Female', weight:'70', referrer:'GP, routine referral', ref_dt:iso(st-3*864e5), anticoag:'None', comorb:['Hypertension'],
+    p_shoulder:'Bilateral', p_hip:'Bilateral', p_neck:true, p_stiff_min:'90', p_duration:'4', p_onset:'Subacute (weeks)', p_other_joints:'None', p_shoulder_rom:true, p_weakness:false, p_tender:false,
+    headache:'None', scalp:false, jaw:false, visual:'None', visual_signs:false, constitutional:'Single',
+    p_wtloss:false, p_night:false, p_neuro:false, p_fever:false, p_cancer:false, p_bone:false, p_received:iso(st-2*864e5), p_triaged_by:'Rheumatology nurse', p_triage:'Primary care with plan',
+    bloods_dt:iso(st-864e5), crp:'38', esr:'46', plt:'410', hb:'121', egfr:'78', alt:'19', glucose:'5.6', hba1c:'39',
+    p_calcium:'2.38', p_alp:'88', p_tsh:'1.9', p_ck:'64', p_rf:'Negative', p_ccp:'Negative', p_ana:'Not done', p_electro:'Normal', p_sflc:'Not done', p_urine:'Normal', p_cxr:'Not indicated', p_vitd:'52',
+    p_us_done:false, p_dose:'Prednisolone 15 mg', p_steroid_dt:iso(st), p_d_bloods:true, p_d_gcawarn:true, p_d_bone:true, p_d_base:true, p_d_card:true, p_d_leaflet:true, p_d_review:true,
+    p_rev_dt:iso(now).slice(0,10), p_improve:'80', p_crp_now:'6', p_stiff_now:'10', p_vas_pain:'2', p_vas_phys:'1', p_eul:'0: above shoulder girdle',
+    p_taper:'EULAR 2025 (stop ~11 months)', p_relapses:'0',
+    p_intake_text:'71F, 4 weeks bilateral shoulder and hip girdle pain, morning stiffness 90 min, struggling to dress. No headache, jaw or visual symptoms. CRP 38, ESR 46, RF and anti-CCP negative, myeloma screen normal. Started prednisolone 15 mg. Example only, fictional.' };
+  S={v:{},src:{}}; Object.entries(v).forEach(([k,x])=>{ S.v[k]=x; S.src[k]='user'; });
+  isExample=true; renderMain(); restoreNew();
+}
+
+/* ---------- new / example ---------- */
+function confirmNew(){
+  const w=$('#newwrap');
+  w.innerHTML=`<span class="confirm"><span class="status">Clear all fields?</span><button class="btn primary" id="yesNew" type="button">Clear</button><button class="btn" id="noNew" type="button">Cancel</button></span>`;
+  $('#yesNew').onclick=()=>{ S={v:{},src:{}}; isExample=false; images=[]; renderMain(); restoreNew(); window.scrollTo(0,0); toast('Ready for a new patient'); };
+  $('#noNew').onclick=restoreNew;
+}
+function restoreNew(){ $('#newwrap').innerHTML='<button class="btn" id="btnNew" type="button">New patient</button>'; $('#btnNew').onclick=confirmNew; }
+function loadExample(){
+  const now=Date.now(); const iso=t=>{ const d=new Date(t); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+  const st=now-30*36e5;
+  const v={ age:'74', sex:'Female', weight:'64', referrer:'GP, urgent referral', ref_dt:iso(st-2*36e5), anticoag:'None', comorb:['Hypertension'],
+    onset:'<6 weeks', headache:'New temporal', scalp:true, jaw:true, visual:'None', visual_signs:false, ta_exam:'Tender', pmr:true, constitutional:'Single', extracranial:'None', limb_claud:false, stroke:false, cn_palsy:false, alt_dx:false,
+    bloods_dt:iso(st-1*36e5), crp:'68', esr:'72', plt:'512', hb:'118', egfr:'71', alt:'22', glucose:'6.1',
+    gcaps_manual:'15', pred_dose:'60 mg', steroid_dt:iso(st), ppi:true, cad:true, passport:true, received_dt:iso(st+1*36e5), triaged_by:'Rheumatology registrar', clinic_dt:iso(st+24*36e5), us_booked:iso(st+24*36e5), triage_outcome:'Fast-track clinic',
+    b_ppi:true,b_cad:true,b_glucose:true,b_noasp:true,b_educ:true,
+    us_dt:iso(st+26*36e5), sonographer:'Rheumatology US', probe:'22 MHz linear', us_quality:'Good', athero:false,
+    r_cst_img:true,r_cst_halo:true,r_cst_comp:true,r_cst_imt:'0.58', r_fr_img:true,r_fr_halo:true,r_fr_comp:true,r_fr_imt:'0.47', r_par_img:true,r_par_halo:false,r_par_comp:false,r_par_imt:'0.25', r_ax_img:true,r_ax_halo:false,r_ax_imt:'0.62',
+    l_cst_img:true,l_cst_halo:false,l_cst_comp:false,l_cst_imt:'0.33', l_fr_img:true,l_fr_halo:false,l_fr_comp:false,l_fr_imt:'0.24', l_par_img:true,l_par_halo:false,l_par_comp:false,l_par_imt:'0.22', l_ax_img:true,l_ax_halo:false,l_ax_imt:'0.65',
+    decision:'Pending',
+    intake_text:'74F, 3 weeks new right temporal headache, scalp tenderness brushing hair, jaw ache on chewing, shoulder stiffness mornings. No visual symptoms. Tender R temporal artery. CRP 68, ESR 72, plt 512. Started prednisolone 60 mg in surgery. Hypertensive, no diabetes. Example only, fictional.' };
+  S={v:{},src:{}}; Object.entries(v).forEach(([k,x])=>{ S.v[k]=x; S.src[k]='user'; });
+  isExample=true; renderMain(); restoreNew();
+}
+$('#btnExample').onclick=()=>{ MOD==='pmr'?loadExamplePMR():loadExample(); window.scrollTo(0,0); };
+$('#btnNew').onclick=confirmNew;
+document.addEventListener('click',e=>{ if(e.target.closest('#exbanner')) return; });
+setInterval(()=>{ if(MOD==='pmr'){ if(parseDT(val('p_steroid_dt'))) renderPanelPMR(); } else if(parseDT(val('steroid_dt'))) renderPanel(); }, 60000);
+setModUI(); MOD==='pmr'?loadExamplePMR():loadExample();
+</script>
+
+</body>
+</html>
